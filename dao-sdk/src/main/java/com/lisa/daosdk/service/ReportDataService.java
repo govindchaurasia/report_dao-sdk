@@ -2,6 +2,7 @@ package com.lisa.daosdk.service;
 
 import com.lisa.daosdk.model.ReportData;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.TupleElement;
@@ -21,11 +22,8 @@ import java.util.Map;
  */
 public class ReportDataService {
 
-    private final EntityManager entityManager;
-
-    public ReportDataService(EntityManager entityManager) {
-        this.entityManager = entityManager;
-    }
+    @PersistenceContext
+    private EntityManager entityManager;
 
     /**
      * Execute a read-only native query and map it to generic rows.
