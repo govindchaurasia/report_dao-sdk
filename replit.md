@@ -70,6 +70,7 @@ All run as read-only native SQL against the host table `fsi_custom_search_outbox
 | `planned-service-breakdown` | counts by `planned_service_type` × `customer_segment` | — |
 | `appointment-funnel` | counts by `appt_phase` × `appt_status` | — |
 | `repair-orders` | RO detail list filtered by `ro_opened_date` | `startDate`, `endDate` (defaulted to an open range) |
+| `store-engagement-funnel` | daily per-store funnel (contacted → responded → engaged → appointments) joined to `jag_store_master`, filtered by `actual_i_date` | `startDate`, `endDate` (defaulted to an open range) |
 
 Example: `GET /api/reports/repair-orders?format=excel&startDate=2026-01-01&endDate=2026-03-31`.
 
