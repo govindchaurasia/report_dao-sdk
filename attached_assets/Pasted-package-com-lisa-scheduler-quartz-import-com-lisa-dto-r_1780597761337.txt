@@ -1,0 +1,295 @@
+package com.lisa.scheduler.quartz;
+
+import com.lisa.dto.report.GenerateReportRequestDto;
+import com.lisa.dto.report.ReportConfigMasterEntityDto;
+import com.lisa.enums.ReportFrequency;
+import com.lisa.service.report.GenerateReportInstanceFactory;
+import com.lisa.service.report.GenerateReportService;
+import com.lisa.service.report.ReportConfigMasterService;
+import com.lisa.util.GlobalUtil;
+import com.lisa.util.NullOrEmpty;
+import lombok.extern.slf4j.Slf4j;
+import org.quartz.Job;
+import org.quartz.JobDataMap;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAdjusters;
+import java.util.Date;
+import java.util.List;
+
+import static com.lisa.constants.CommonConstants.REPORT_ID;
+import static java.time.DayOfWeek.MONDAY;
+import static java.time.DayOfWeek.SUNDAY;
+
+@Component
+@Slf4j
+public class GenerateReportJobScheduler implements Job {
+
+    @Autowired
+    private ReportConfigMasterService reportConfigMasterService;
+    @Autowired
+    private GenerateReportInstanceFactory generateReportInstanceFactory;
+
+    private final static String REPORT_FREQUENCY_FIELD = "frequency";
+    private final static String PST = "GMT-07:00";
+    private final static String MST = "GMT-06:00";
+    private final static String CST = "GMT-05:00";
+    private final static String EST = "GMT-04:00";
+
+    @Override
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        String jobName = context.getJobDetail().getKey().getName();
+        log.info("Scheduler Job Triggered name: {} ", jobName);
+        JobDataMap jobDataMap = context.getJobDetail().getJobDataMap();
+        String reportId = jobDataMap.getString(REPORT_ID);
+
+        if (NullOrEmpty.isNotNullOrEmpty(reportId)) {
+            // finding the reportConfigMasterEntityDto by reportId
+            ReportConfigMasterEntityDto reportConfigMasterEntityDto = reportConfigMasterService.findActiveReportConfigById(Long.parseLong(reportId));
+
+            // Process the report using the reportConfigMasterEntityDto
+            process(reportConfigMasterEntityDto);
+        } else {
+            String jobKey = "[" + context.getJobDetail().getKey().getGroup() + "-" + context.getJobDetail().getKey().getName() + "]";
+            log.info("Scheduler Job: " + jobKey + " triggered");
+            String frequency = (String) jobDataMap.get(REPORT_FREQUENCY_FIELD);
+            if (frequency == null) {
+                log.error(jobKey + " No frequency found in jobDataMap.");
+                return;
+            }
+
+            String timeZone = GlobalUtil.isAutonationAgent() ? EST : getTimeZone();
+            if (NullOrEmpty.isNullOrEmpty(timeZone)) {
+                log.error("{}, No timezone defined.", jobKey);
+            }
+
+            List<ReportConfigMasterEntityDto> activeConfigMasters = reportConfigMasterService.getAllActiveConfigMasterByFrequencyAndTimeZone(ReportFrequency.valueOf(frequency), timeZone);
+            if (activeConfigMasters.isEmpty()) {
+                log.error(jobKey + "No Active report config master found to process");
+            }
+            activeConfigMasters.forEach(this::process);
+        }
+    }
+
+    public void process(ReportConfigMasterEntityDto reportConfigMasterEntityDto) {
+        GenerateReportService generateReportService;
+        GenerateReportRequestDto request = buildRequest(reportConfigMasterEntityDto);
+
+        generateReportService = generateReportInstanceFactory.getInstanceByType(reportConfigMasterEntityDto.getReportType());
+        switch (reportConfigMasterEntityDto.getReportType()) {
+            case LEAD_STATUS:
+                log.info(String.format("LEAD_STATUS report send notification started! startDate: %s, endDate: %s, StoreIdFk: %s, ServiceType: %s", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType()));
+                // Async function
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case OPT_OUT:
+                log.info(String.format("OPT_OUT report send notification started! startDate: %s, endDate: %s, StoreIdFk: %s, ServiceType: %s", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType()));
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case APPT_ACTIVITY:
+                log.info(String.format("APPT_ACTIVITY report send notification started! startDate: %s, endDate: %s, StoreIdFk: %s, ServiceType: %s", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType()));
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case RESPONSE_INSIGHT:
+                log.info(String.format("RESPONSE_INSIGHT report send notification started! startDate: %s, endDate: %s, StoreIdFk: %s, ServiceType: %s", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType()));
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case INBOUND_ACTIVITY_REPORT:
+                log.info(String.format("INBOUND_ACTIVITY_REPORT report send notification started! startDate: %s, endDate: %s, StoreIdFk: %s, ServiceType: %s", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType()));
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case PERFORMANCE_SUMMARY:
+                log.info(String.format("PERFORMANCE_SUMMARY report send notification started! startDate: %s, endDate: %s, StoreIdFk: %s, ServiceType: %s", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType()));
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case PERFORMANCE_SUMMARY_PER_STORE:
+                log.info(String.format("PERFORMANCE_SUMMARY_PER_STORE report send notification started! startDate: %s, endDate: %s, StoreIdFk: %s, ServiceType: %s", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType()));
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case CONTROL_GROUP_TREATMENT:
+                log.info(String.format("CONTROL_GROUP_TREATMENT report send notification started! startDate: %s, endDate: %s, StoreIdFk: %s, ServiceType: %s", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType()));
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case LEAD_STATUS_ACTIVITY:
+                log.info("LEAD_STATUS_ACTIVITY report send notification started! startDate: {}, endDate: {}, StoreIdFk: {}, ServiceType: {}", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType());
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case MB_CONNECTEDCAR_NOTTEXTTABLE_NRAA:
+                log.info("MB_CONNECTEDCAR_NOTTEXTTABLE_NRAA report send notification started! startDate: {}, endDate: {}, StoreIdFk: {}, ServiceType: {}", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType());
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case AUTONATION_EXCLUSION_REPORT:
+                log.info("AUTONATION_EXCLUSION_REPORT report send notification started! startDate: {}, endDate: {}, StoreIdFk: {}, ServiceType: {}", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType());
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case AUTONATION_INCLUSION_REPORT:
+                log.info("AUTONATION_INCLUSION_REPORT report send notification started! startDate: {}, endDate: {}, StoreIdFk: {}, ServiceType: {}", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType());
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case AUTONATION_INCLUSION_PLANNED_DATE_REPORT:
+                log.info("AUTONATION_INCLUSION_PLANNED_DATE_REPORT report send notification started! startDate: {}, endDate: {}, StoreIdFk: {}, ServiceType: {}", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType());
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case AFTER_HOURS_DETAIL:
+                log.info("AFTER_HOURS_DETAIL report send notification started! startDate: {}, endDate: {}, StoreIdFk: {}, ServiceType: {}", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType());
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case NO_SERVICE_FULL:
+                log.info("NO_SERVICE_FULL report send notification started! startDate: {}, endDate: {}, StoreIdFk: {}, ServiceType: {}", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType());
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            case NO_SERVICE_PARTIAL:
+                log.info("NO_SERVICE_PARTIAL report send notification started! startDate: {}, endDate: {}, StoreIdFk: {}, ServiceType: {}", request.getStartDate(), request.getEndDate(), request.getStoreIdFK(), request.getServiceType());
+                generateReportService.generate(request, reportConfigMasterEntityDto);
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown report type " + reportConfigMasterEntityDto.getReportType().name());
+        }
+    }
+
+    public GenerateReportRequestDto buildRequest(ReportConfigMasterEntityDto reportConfigMasterEntityDto) {
+        switch (reportConfigMasterEntityDto.getReportFrequency()) {
+            case DAILY:
+                // Entire current day
+                // startDate: 20 Jan 2026 00:00:00
+                // endDate: 20 Jan 2026 23:59:59
+                return GenerateReportRequestDto.builder()
+                        .serviceType(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getName() : "")
+                        .storeIdFK(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getId() : null)
+                        .enterpriseId(reportConfigMasterEntityDto.getEnterpriseId())
+                        .startDate(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()))
+                        .endDate(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).plusDays(1).minusSeconds(1).toInstant()))
+                        .build();
+            case WEEKLY:
+                // Full current week (Previous Mon–Sun)
+                // startDate - 19 Jan 2026 00:00:00 (Monday)
+                // endDate - 25 Jan 2026 23:59:59 (Sunday)
+                return GenerateReportRequestDto.builder()
+                        .serviceType(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getName() : "")
+                        .storeIdFK(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getId() : null)
+                        .enterpriseId(reportConfigMasterEntityDto.getEnterpriseId())
+                        .startDate(Date.from(LocalDate.now().with(TemporalAdjusters.previousOrSame(MONDAY)).atStartOfDay(ZoneId.systemDefault()).toInstant()))
+                        .endDate(Date.from(LocalDate.now().with(TemporalAdjusters.nextOrSame(SUNDAY)).atStartOfDay(ZoneId.systemDefault()).plusDays(1).minusSeconds(1).toInstant()))
+                        .build();
+            case MONTHLY:
+                // Entire previous month
+                // startDate - 01 Dec 2025 00:00:00
+                // endDate - 31 Dec 2025 23:59:59
+                return GenerateReportRequestDto.builder()
+                        .serviceType(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getName() : "")
+                        .storeIdFK(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getId() : null)
+                        .enterpriseId(reportConfigMasterEntityDto.getEnterpriseId())
+                        .startDate(Date.from(LocalDate.now().withDayOfMonth(1).minusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant()))
+                        .endDate(Date.from(LocalDate.now().withDayOfMonth(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1).toInstant()))
+                        .build();
+            case QUARTERLY:
+                // Rolling last ~3 months
+                // startDate - 21 Oct 2025 00:00:00
+                // endDate - 20 Jan 2026 23:59:59
+                return GenerateReportRequestDto.builder()
+                        .serviceType(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getName() : "")
+                        .storeIdFK(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getId() : null)
+                        .enterpriseId(reportConfigMasterEntityDto.getEnterpriseId())
+                        .startDate(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusDays(91).toInstant()))
+                        .endDate(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).plusDays(1).minusSeconds(1).toInstant()))
+                        .build();
+            case YEARLY:
+                // Previous Calendar Year
+                // Start: Jan 1, 00:00:00 of last year
+                // End: Dec 31, 00:00:00 of last year
+                return GenerateReportRequestDto.builder()
+                        .serviceType(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getName() : "")
+                        .storeIdFK(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getId() : null)
+                        .enterpriseId(reportConfigMasterEntityDto.getEnterpriseId())
+                        .startDate(Date.from(LocalDate.now().minusYears(1).with(TemporalAdjusters.firstDayOfYear()).atStartOfDay(ZoneId.systemDefault()).toInstant()))
+                        .endDate(Date.from(LocalDate.now().minusYears(1).with(TemporalAdjusters.lastDayOfYear()).atStartOfDay(ZoneId.systemDefault()).plusDays(1)
+                                .minusSeconds(1).toInstant()))
+                        .build();
+
+            case CURRENT_MONTHLY:
+                // Start: 01 Jan 2026 00:00:00
+                // End: 31 Jan 2026 23:59:59
+                return GenerateReportRequestDto.builder()
+                        .serviceType(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getName() : "")
+                        .storeIdFK(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getId() : null)
+                        .enterpriseId(reportConfigMasterEntityDto.getEnterpriseId()).startDate(Date.from(LocalDate.now().withDayOfMonth(1).atStartOfDay(ZoneId.systemDefault()).toInstant()))
+                        .endDate(Date.from(LocalDate.now()
+                                        .with(TemporalAdjusters.lastDayOfMonth())
+                                        .atStartOfDay(ZoneId.systemDefault())
+                                        .plusDays(1)
+                                        .minusSeconds(1)
+                                        .toInstant()
+                        ))
+                        .build();
+
+            case CURRENT_YEARLY:
+                // Start: 01 Jan 2026 00:00:00
+                // End: 31 Dec 2026 23:59:59
+                return GenerateReportRequestDto.builder()
+                        .serviceType(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getName() : "")
+                        .storeIdFK(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getId() : null)
+                        .enterpriseId(reportConfigMasterEntityDto.getEnterpriseId()).startDate(Date.from(LocalDate.now()
+                                        .with(TemporalAdjusters.firstDayOfYear())
+                                        .atStartOfDay(ZoneId.systemDefault())
+                                        .toInstant()
+                        ))
+                        .endDate(Date.from(LocalDate.now()
+                                        .with(TemporalAdjusters.lastDayOfYear())
+                                        .atStartOfDay(ZoneId.systemDefault())
+                                        .plusDays(1)
+                                        .minusSeconds(1)
+                                        .toInstant()
+                        ))
+                        .build();
+
+            case CUSTOM:
+                return GenerateReportRequestDto.builder()
+                        .serviceType(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getName() : "")
+                        .storeIdFK(NullOrEmpty.isNotNullOrEmpty(reportConfigMasterEntityDto.getServiceInteraction()) ? reportConfigMasterEntityDto.getServiceInteraction().getId() : null)
+                        .enterpriseId(reportConfigMasterEntityDto.getEnterpriseId())
+                        .startDate(reportConfigMasterEntityDto.getStartDate())
+                        .endDate(reportConfigMasterEntityDto.getEndDate())
+                        .build();
+            default:
+                throw new IllegalArgumentException("Unknown Frequency defined " + reportConfigMasterEntityDto.getReportFrequency().name());
+        }
+    }
+
+    private static String getTimeZone() {
+        ZonedDateTime nowEST = ZonedDateTime.now(ZoneId.of("America/New_York"));
+        ZonedDateTime nowPST = ZonedDateTime.now(ZoneId.of("America/Los_Angeles"));
+        ZonedDateTime nowCST = ZonedDateTime.now(ZoneId.of("America/Chicago"));
+        ZonedDateTime nowMST = ZonedDateTime.now(ZoneId.of("America/Denver"));
+        
+        log.info("nowEST.getHour(): "+nowEST.getHour()+ "nowCST.getHour(): "+nowCST.getHour()+ "nowMST.getHour(): "+nowMST.getHour()+ "nowPST.getHour(): "+nowPST.getHour());
+        
+        if (nowEST.getHour() == 9) {
+            return EST;
+        } else if (nowPST.getHour() == 9) {
+            return PST;
+        } else if (nowCST.getHour() == 9) {
+            return CST;
+        } else if (nowMST.getHour() == 9) {
+            return MST;
+        }
+        return CST;
+    }
+
+    private static void resetDateTime(GenerateReportRequestDto request) {
+        Date startDate = request.getStartDate();
+        LocalDateTime localDateTimeStart = startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().minusDays(1);
+        request.setStartDate(Date.from(localDateTimeStart.atZone(ZoneId.systemDefault()).toInstant()));
+
+        Date endDate = request.getEndDate();
+        LocalDateTime localDateTimeEnd = endDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().minusDays(1);
+        request.setEndDate(Date.from(localDateTimeEnd.atZone(ZoneId.systemDefault()).toInstant()));
+    }
+
+}
