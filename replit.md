@@ -75,7 +75,7 @@ Example: `GET /api/reports/repair-orders?format=excel&startDate=2026-01-01&endDa
 
 The `repair-orders` and `connected-car-alerts` reports select an `id` column — adjust if your `BaseEntityWithId` maps the primary key to a different column name.
 
-## Typed report services (`com.lisa.reportingmodule.report`)
+## Typed report services (`com.lisa.report`)
 
 Mirrors the host's `GenerateReportService` / `GenerateReportInstanceFactory` / `ReportType` pattern, but with library-owned classes so the JAR stays self-contained and does not collide with the host's `com.lisa.service.report.*` on the classpath.
 
