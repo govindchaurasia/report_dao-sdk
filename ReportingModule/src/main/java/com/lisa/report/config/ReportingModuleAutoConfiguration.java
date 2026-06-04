@@ -157,6 +157,29 @@ public class ReportingModuleAutoConfiguration {
                         + "ORDER BY planner_run_date DESC",
                 Map.of("storeId", "0", "startDate", "1970-01-01", "endDate", "2999-12-31 23:59:59")));
 
+        // 7. Daily store engagement funnel, joined to jag_store_master for the
+        // store name and ASD attributes. Column aliases match the requested Excel
+        // layout. Grouped by day so each row is one date / store / service-type
+        // (matching the sample report). Override the window via
+        // ?startDate=2026-03-01&endDate=2026-03-31
+        registry.register(new ReportDefinition(
+                "store-engagement-funnel",
+                "SELECT DATE_FORMAT(fsi.actual_i_date, '%d-%m-%Y') AS `Date`, "
+                        + "jsm.store_name AS `Store Name`, "
+                        + "fsi.planned_service_type AS `Interaction`, "
+                        + "jsm.boc_id AS `ASD Market`, "
+                        + "jsm.area_service_director AS `ASD`, "
+                        + "SUM(CASE WHEN fsi.appt_phase IN ('CONTACTED','RESPONDED','ENGAGED','APPT_BOOKING') THEN 1 ELSE 0 END) AS `Contacted`, "
+                        + "SUM(CASE WHEN fsi.appt_phase IN ('RESPONDED','ENGAGED','APPT_BOOKING') THEN 1 ELSE 0 END) AS `Responded`, "
+                        + "SUM(CASE WHEN fsi.appt_phase IN ('ENGAGED','APPT_BOOKING') THEN 1 ELSE 0 END) AS `Engaged`, "
+                        + "SUM(CASE WHEN fsi.appt_phase = 'APPT_BOOKING' THEN 1 ELSE 0 END) AS `Appointments` "
+                        + "FROM fsi_custom_search_outbox fsi "
+                        + "JOIN jag_store_master jsm ON fsi.store_id_fk = jsm.id "
+                        + "WHERE fsi.actual_i_date BETWEEN :startDate AND :endDate "
+                        + "GROUP BY DATE(fsi.actual_i_date), jsm.store_name, fsi.planned_service_type, jsm.boc_id, jsm.area_service_director "
+                        + "ORDER BY DATE(fsi.actual_i_date), jsm.store_name",
+                Map.of("startDate", "1970-01-01", "endDate", "2999-12-31 23:59:59")));
+
         return registry;
     }
 
