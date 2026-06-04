@@ -40,9 +40,8 @@ mvn -f ReportingModule/pom.xml -DskipTests install
 ## Where things live
 
 - `dao-sdk/src/main/java/com/lisa/daosdk/`
-  - `service/ReportDataService` — runs read-only native SQL, returns schema-agnostic rows
-  - `entity/`, `repository/` — sample JPA entity + repository (replace with your real tables)
-  - `config/DaoSdkAutoConfiguration` — entity scan, repositories, `ReportDataService` bean
+  - `service/ReportDataService` — runs read-only native SQL (`@PersistenceContext` `EntityManager`), returns schema-agnostic rows
+  - `config/DaoSdkAutoConfiguration` — exposes the `ReportDataService` bean (after JPA auto-config, gated on `EntityManagerFactory`)
 - `ReportingModule/src/main/java/com/lisa/reportingmodule/`
   - `service/ReportingService` — orchestrates fetch → render; called by REST and Quartz
   - `service/ReportDefinitionRegistry` — named report definitions (host registers its own)
@@ -55,10 +54,26 @@ mvn -f ReportingModule/pom.xml -DskipTests install
 
 1. Add `com.lisa:reporting-module:1.0.0` as a dependency (it transitively brings `dao-sdk`).
 2. Configure the datasource (`spring.datasource.*`) for your AWS RDS instance as usual.
-3. Register report definitions by autowiring `ReportDefinitionRegistry` and calling `register(...)`.
-4. Trigger reports via `GET /api/reports/{name}?format=excel`, or schedule `ReportGenerationJob` in Quartz with a `JobDataMap` containing `reportName` (+ optional `format` and SQL params).
+3. Trigger reports via `GET /api/reports/{name}?format=excel`, or schedule `ReportGenerationJob` in Quartz with a `JobDataMap` containing `reportName` (+ optional `format` and SQL params).
+4. To add more reports, autowire `ReportDefinitionRegistry` and call `register(...)` from the host.
 
 Configurable via `reporting.*`: `reporting.output-directory`, `reporting.expose-rest-endpoint`, `reporting.base-path`.
+
+## Built-in reports
+
+All run as read-only native SQL against the host table `fsi_custom_search_outbox` (the host owns the JPA entity; the SDK does not redeclare it). The encrypted `vin` column is excluded — native SQL returns ciphertext.
+
+| Name | What it shows | Params |
+| --- | --- | --- |
+| `outbox-status-summary` | record count by `status` | — |
+| `ai-engagement-by-store` | per-store funnel: total / ai-enabled / conversations / responded / appointments | — |
+| `planned-service-breakdown` | counts by `planned_service_type` × `customer_segment` | — |
+| `appointment-funnel` | counts by `appt_phase` × `appt_status` | — |
+| `repair-orders` | RO detail list filtered by `ro_opened_date` | `startDate`, `endDate` (defaulted to an open range) |
+
+Example: `GET /api/reports/repair-orders?format=excel&startDate=2026-01-01&endDate=2026-03-31`.
+
+The `repair-orders` report selects an `id` column — adjust if your `BaseEntityWithId` maps the primary key to a different column name.
 
 ## Architecture decisions
 
