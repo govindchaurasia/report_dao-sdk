@@ -7,6 +7,9 @@ import com.lisa.reportingmodule.format.ExcelReportWriter;
 import com.lisa.reportingmodule.format.JsonReportWriter;
 import com.lisa.reportingmodule.format.ReportWriter;
 import com.lisa.reportingmodule.model.ReportDefinition;
+import com.lisa.reportingmodule.report.GenerateConnectedCarAlertReportService;
+import com.lisa.reportingmodule.report.GenerateReportInstanceFactory;
+import com.lisa.reportingmodule.report.GenerateReportService;
 import com.lisa.reportingmodule.service.ReportDefinitionRegistry;
 import com.lisa.reportingmodule.service.ReportingService;
 import com.lisa.reportingmodule.web.ReportController;
@@ -123,6 +126,37 @@ public class ReportingModuleAutoConfiguration {
                         + "ORDER BY ro_opened_date DESC",
                 Map.of("startDate", "1970-01-01", "endDate", "2999-12-31 23:59:59")));
 
+        // 6. Connected Car Alert report.
+        // Rows that carry a connected-car service alert (serviceAlertId present),
+        // windowed by planner_run_date and optionally scoped to a single store.
+        // Params map 1:1 to GenerateReportRequestDto: storeIdFK / startDate / endDate.
+        // storeId = 0 (default) means "all stores". `vin` excluded (encrypted).
+        registry.register(new ReportDefinition(
+                GenerateConnectedCarAlertReportService.REPORT_NAME,
+                "SELECT id AS id, "
+                        + "store_id_fk AS store_id, "
+                        + "customer_id_fk AS customer_id, "
+                        + "service_vehicle_id_fk AS service_vehicle_id, "
+                        + "serviceAlertId AS service_alert_id, "
+                        + "brand AS brand, "
+                        + "predicted_mileage AS predicted_mileage, "
+                        + "planned_service_type AS planned_service_type, "
+                        + "planned_date AS planned_date, "
+                        + "estimated_due_date AS estimated_due_date, "
+                        + "status AS status, "
+                        + "appt_status AS appt_status, "
+                        + "appt_date AS appt_date, "
+                        + "line_type AS line_type, "
+                        + "type AS type, "
+                        + "predictive_planner_id AS predictive_planner_id, "
+                        + "planner_run_date AS planner_run_date "
+                        + "FROM fsi_custom_search_outbox "
+                        + "WHERE serviceAlertId IS NOT NULL "
+                        + "AND (:storeId = 0 OR store_id_fk = :storeId) "
+                        + "AND planner_run_date BETWEEN :startDate AND :endDate "
+                        + "ORDER BY planner_run_date DESC",
+                Map.of("storeId", "0", "startDate", "1970-01-01", "endDate", "2999-12-31 23:59:59")));
+
         return registry;
     }
 
@@ -140,5 +174,17 @@ public class ReportingModuleAutoConfiguration {
     @ConditionalOnProperty(prefix = "reporting", name = "expose-rest-endpoint", havingValue = "true", matchIfMissing = true)
     public ReportController reportController(ReportingService reportingService) {
         return new ReportController(reportingService);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public GenerateConnectedCarAlertReportService generateConnectedCarAlertReportService(ReportingService reportingService) {
+        return new GenerateConnectedCarAlertReportService(reportingService);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public GenerateReportInstanceFactory generateReportInstanceFactory(List<GenerateReportService> reportServices) {
+        return new GenerateReportInstanceFactory(reportServices);
     }
 }

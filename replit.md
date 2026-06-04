@@ -73,7 +73,32 @@ All run as read-only native SQL against the host table `fsi_custom_search_outbox
 
 Example: `GET /api/reports/repair-orders?format=excel&startDate=2026-01-01&endDate=2026-03-31`.
 
-The `repair-orders` report selects an `id` column — adjust if your `BaseEntityWithId` maps the primary key to a different column name.
+The `repair-orders` and `connected-car-alerts` reports select an `id` column — adjust if your `BaseEntityWithId` maps the primary key to a different column name.
+
+## Typed report services (`com.lisa.reportingmodule.report`)
+
+Mirrors the host's `GenerateReportService` / `GenerateReportInstanceFactory` / `ReportType` pattern, but with library-owned classes so the JAR stays self-contained and does not collide with the host's `com.lisa.service.report.*` on the classpath.
+
+- `ReportType` — library enum (currently `CONNECTED_CAR_ALERT`).
+- `GenerateReportRequestDto` — immutable, builder-based; field names mirror the host DTO (`serviceType`, `storeIdFK`, `enterpriseId`, `startDate`, `endDate`).
+- `GenerateReportService` — strategy contract: `getSupportedType()` + `generate(request, format)` returning a rendered `ReportResult`. Delivery/notification stays in the host.
+- `GenerateReportInstanceFactory` — injects all `GenerateReportService` beans and dispatches by `ReportType`.
+- `GenerateConnectedCarAlertReportService` — maps the typed request onto the `connected-car-alerts` definition's params and delegates to `ReportingService`. The SQL lives in the registry definition (single source of truth).
+
+Host usage:
+
+```java
+ReportResult result = generateReportInstanceFactory
+        .getInstanceByType(ReportType.CONNECTED_CAR_ALERT)
+        .generate(GenerateReportRequestDto.builder()
+                .storeIdFK(store.getId())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .build(),
+            ReportFormat.EXCEL);
+```
+
+The **Connected Car Alert** report selects rows where `serviceAlertId IS NOT NULL`, windowed by `planner_run_date`, optionally scoped to one store (`storeId = 0` ⇒ all). Confirm that `serviceAlertId IS NOT NULL` and `planner_run_date` are the right "connected-car alert" and date-window semantics for your data — both are easy one-line tweaks in the `connected-car-alerts` definition.
 
 ## Architecture decisions
 
