@@ -1,4 +1,4 @@
-package com.lisa.reportingmodule.config;
+package com.lisa.report.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

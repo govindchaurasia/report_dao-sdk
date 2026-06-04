@@ -1,6 +1,6 @@
 package com.lisa.report.model;
 
-import com.lisa.reportingmodule.ReportGenerationException;
+import com.lisa.report.ReportGenerationException;
 
 import java.util.Locale;
 

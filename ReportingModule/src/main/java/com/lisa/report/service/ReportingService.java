@@ -1,9 +1,9 @@
-package com.lisa.reportingmodule.service;
+package com.lisa.report.service;
 
 import com.lisa.daosdk.model.ReportData;
 import com.lisa.daosdk.service.ReportDataService;
-import com.lisa.reportingmodule.ReportGenerationException;
-import com.lisa.reportingmodule.format.ReportWriter;
+import com.lisa.report.ReportGenerationException;
+import com.lisa.report.format.ReportWriter;
 import com.lisa.report.model.ReportDefinition;
 import com.lisa.report.model.ReportFormat;
 import com.lisa.report.model.ReportResult;

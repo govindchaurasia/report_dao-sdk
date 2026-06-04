@@ -114,4 +114,4 @@ The **Connected Car Alert** report selects rows where `serviceAlertId IS NOT NUL
 ## User preferences
 
 - Build tool: Maven. Java 17 + Spring Boot 3.5.3. Data access: Spring Data JPA (Hibernate). DB: MySQL/MariaDB (AWS RDS). Wiring: Spring Boot auto-configuration (starter-style).
-- groupId `com.lisa`; base packages `com.lisa.daosdk` and `com.lisa.reportingmodule`.
+- groupId `com.lisa`; base packages `com.lisa.daosdk` (dao-sdk) and `com.lisa.report` (ReportingModule).
