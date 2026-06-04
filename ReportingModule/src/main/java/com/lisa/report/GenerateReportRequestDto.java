@@ -1,4 +1,4 @@
-package com.lisa.reportingmodule.report;
+package com.lisa.report;
 
 import java.util.Date;
 

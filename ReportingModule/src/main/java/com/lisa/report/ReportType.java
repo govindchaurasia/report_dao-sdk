@@ -1,4 +1,4 @@
-package com.lisa.reportingmodule.report;
+package com.lisa.report;
 
 /**
  * Report types implemented inside this library.

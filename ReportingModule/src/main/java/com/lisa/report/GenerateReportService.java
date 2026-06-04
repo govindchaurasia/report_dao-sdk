@@ -1,4 +1,4 @@
-package com.lisa.reportingmodule.report;
+package com.lisa.report;
 
 import com.lisa.reportingmodule.model.ReportFormat;
 import com.lisa.reportingmodule.model.ReportResult;
