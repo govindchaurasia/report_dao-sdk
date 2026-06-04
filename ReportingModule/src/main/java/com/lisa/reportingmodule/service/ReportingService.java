@@ -4,9 +4,9 @@ import com.lisa.daosdk.model.ReportData;
 import com.lisa.daosdk.service.ReportDataService;
 import com.lisa.reportingmodule.ReportGenerationException;
 import com.lisa.reportingmodule.format.ReportWriter;
-import com.lisa.reportingmodule.model.ReportDefinition;
-import com.lisa.reportingmodule.model.ReportFormat;
-import com.lisa.reportingmodule.model.ReportResult;
+import com.lisa.report.model.ReportDefinition;
+import com.lisa.report.model.ReportFormat;
+import com.lisa.report.model.ReportResult;
 
 import java.util.Collection;
 import java.util.EnumMap;

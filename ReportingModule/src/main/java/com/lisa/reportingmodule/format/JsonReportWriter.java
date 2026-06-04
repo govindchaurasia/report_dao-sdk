@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.lisa.daosdk.model.ReportData;
 import com.lisa.reportingmodule.ReportGenerationException;
-import com.lisa.reportingmodule.model.ReportFormat;
-import com.lisa.reportingmodule.model.ReportResult;
+import com.lisa.report.model.ReportFormat;
+import com.lisa.report.model.ReportResult;
 
 /**
  * Renders a report as pretty-printed JSON (an array of row objects).

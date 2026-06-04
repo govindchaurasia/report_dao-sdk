@@ -6,7 +6,7 @@ import com.lisa.reportingmodule.format.CsvReportWriter;
 import com.lisa.reportingmodule.format.ExcelReportWriter;
 import com.lisa.reportingmodule.format.JsonReportWriter;
 import com.lisa.reportingmodule.format.ReportWriter;
-import com.lisa.reportingmodule.model.ReportDefinition;
+import com.lisa.report.model.ReportDefinition;
 import com.lisa.report.GenerateConnectedCarAlertReportService;
 import com.lisa.report.GenerateReportInstanceFactory;
 import com.lisa.report.GenerateReportService;

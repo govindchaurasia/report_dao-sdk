@@ -2,8 +2,8 @@ package com.lisa.reportingmodule.format;
 
 import com.lisa.daosdk.model.ReportData;
 import com.lisa.reportingmodule.ReportGenerationException;
-import com.lisa.reportingmodule.model.ReportFormat;
-import com.lisa.reportingmodule.model.ReportResult;
+import com.lisa.report.model.ReportFormat;
+import com.lisa.report.model.ReportResult;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
