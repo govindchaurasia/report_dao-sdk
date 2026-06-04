@@ -1,4 +1,4 @@
-package com.lisa.reportingmodule.format;
+package com.lisa.report.format;
 
 import com.lisa.daosdk.model.ReportData;
 import com.lisa.report.model.ReportFormat;

@@ -1,8 +1,8 @@
-package com.lisa.reportingmodule.web;
+package com.lisa.report.web;
 
 import com.lisa.report.model.ReportFormat;
 import com.lisa.report.model.ReportResult;
-import com.lisa.reportingmodule.service.ReportingService;
+import com.lisa.report.service.ReportingService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

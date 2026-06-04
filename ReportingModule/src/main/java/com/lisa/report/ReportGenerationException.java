@@ -1,4 +1,4 @@
-package com.lisa.reportingmodule;
+package com.lisa.report;
 
 /**
  * Thrown when a report cannot be generated (unknown report, unsupported format,

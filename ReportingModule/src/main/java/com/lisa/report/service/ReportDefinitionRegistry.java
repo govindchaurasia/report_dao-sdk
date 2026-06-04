@@ -1,4 +1,4 @@
-package com.lisa.reportingmodule.service;
+package com.lisa.report.service;
 
 import com.lisa.report.model.ReportDefinition;
 

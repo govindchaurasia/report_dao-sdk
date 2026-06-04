@@ -1,9 +1,9 @@
-package com.lisa.reportingmodule.scheduling;
+package com.lisa.report.scheduling;
 
-import com.lisa.reportingmodule.config.ReportingProperties;
+import com.lisa.report.config.ReportingProperties;
 import com.lisa.report.model.ReportFormat;
 import com.lisa.report.model.ReportResult;
-import com.lisa.reportingmodule.service.ReportingService;
+import com.lisa.report.service.ReportingService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
 import org.quartz.JobDataMap;

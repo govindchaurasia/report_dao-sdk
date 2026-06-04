@@ -1,18 +1,18 @@
-package com.lisa.reportingmodule.config;
+package com.lisa.report.config;
 
 import com.lisa.daosdk.config.DaoSdkAutoConfiguration;
 import com.lisa.daosdk.service.ReportDataService;
-import com.lisa.reportingmodule.format.CsvReportWriter;
-import com.lisa.reportingmodule.format.ExcelReportWriter;
-import com.lisa.reportingmodule.format.JsonReportWriter;
-import com.lisa.reportingmodule.format.ReportWriter;
+import com.lisa.report.format.CsvReportWriter;
+import com.lisa.report.format.ExcelReportWriter;
+import com.lisa.report.format.JsonReportWriter;
+import com.lisa.report.format.ReportWriter;
 import com.lisa.report.model.ReportDefinition;
 import com.lisa.report.GenerateConnectedCarAlertReportService;
 import com.lisa.report.GenerateReportInstanceFactory;
 import com.lisa.report.GenerateReportService;
-import com.lisa.reportingmodule.service.ReportDefinitionRegistry;
-import com.lisa.reportingmodule.service.ReportingService;
-import com.lisa.reportingmodule.web.ReportController;
+import com.lisa.report.service.ReportDefinitionRegistry;
+import com.lisa.report.service.ReportingService;
+import com.lisa.report.web.ReportController;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

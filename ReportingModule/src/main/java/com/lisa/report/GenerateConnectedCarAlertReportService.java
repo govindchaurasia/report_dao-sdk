@@ -2,7 +2,7 @@ package com.lisa.report;
 
 import com.lisa.report.model.ReportFormat;
 import com.lisa.report.model.ReportResult;
-import com.lisa.reportingmodule.service.ReportingService;
+import com.lisa.report.service.ReportingService;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
