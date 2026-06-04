@@ -1,4 +1,4 @@
-package com.lisa.reportingmodule.model;
+package com.lisa.report.model;
 
 /**
  * The rendered output of a report: the raw bytes plus the metadata needed to

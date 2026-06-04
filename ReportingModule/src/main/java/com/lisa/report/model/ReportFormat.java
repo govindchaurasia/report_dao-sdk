@@ -1,4 +1,4 @@
-package com.lisa.reportingmodule.model;
+package com.lisa.report.model;
 
 import com.lisa.reportingmodule.ReportGenerationException;
 

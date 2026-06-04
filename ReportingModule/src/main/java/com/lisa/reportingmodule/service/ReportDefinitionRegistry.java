@@ -1,6 +1,6 @@
 package com.lisa.reportingmodule.service;
 
-import com.lisa.reportingmodule.model.ReportDefinition;
+import com.lisa.report.model.ReportDefinition;
 
 import java.util.Collection;
 import java.util.TreeSet;
