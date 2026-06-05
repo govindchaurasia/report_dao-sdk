@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "GTQ3n85P4cdCbGqbMRnaY"
+uri = "file://reporting-library.tar.gz"
+type = "unspecified"
+title = "Reporting Library (dao-sdk + ReportingModule)"
