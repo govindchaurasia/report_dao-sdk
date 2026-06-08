@@ -7,7 +7,7 @@ import java.util.Date;
 
 /**
  * Library-owned, immutable report configuration — the single object the host passes
- * to {@code SdkGenerateAndDeliverService.generateAndDeliver(SdkReportConfig)}.
+ * to {@code GenerateAndDeliverService.generateAndDeliver(ReportConfig)}.
  * <p>
  * It mirrors the fields of the host's {@code ReportConfigMasterDto} that the library
  * framework needs (what to generate, the date-window frequency, and where to deliver),
@@ -19,7 +19,7 @@ import java.util.Date;
  */
 @Getter
 @Builder
-public class SdkReportConfig {
+public class ReportConfig {
 
     // --- Identity / targeting ---
     private final Long id;

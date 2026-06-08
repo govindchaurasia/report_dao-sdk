@@ -7,7 +7,7 @@ import java.util.Locale;
  * but is library-owned (different package) so the JAR stays self-contained and does
  * not collide with host classes on the classpath.
  * <p>
- * Drives the date window computed by {@link SdkReportRequestFactory}.
+ * Drives the date window computed by {@link ReportRequestFactory}.
  */
 public enum ReportFrequency {
 

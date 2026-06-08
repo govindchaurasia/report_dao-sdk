@@ -5,7 +5,7 @@ import com.lisa.report.delivery.ReportDeliveryConfig;
 import com.lisa.report.delivery.ReportDeliveryService;
 import com.lisa.report.model.ReportFormat;
 import com.lisa.report.model.ReportResult;
-import com.lisa.report.model.SdkReportConfig;
+import com.lisa.report.model.ReportConfig;
 
 /**
  * One-call orchestrator: generate a report and then deliver it (email / SFTP,
@@ -13,24 +13,24 @@ import com.lisa.report.model.SdkReportConfig;
  * <p>
  * Two entry points:
  * <ul>
- *   <li>{@link #generateAndDeliver(SdkReportConfig)} — the framework path. The host's
- *       Quartz job maps its config row onto a {@link SdkReportConfig}; the library
+ *   <li>{@link #generateAndDeliver(ReportConfig)} — the framework path. The host's
+ *       Quartz job maps its config row onto a {@link ReportConfig}; the library
  *       resolves the type/format, builds the date window from the frequency, dispatches
- *       to the matching {@link SdkGenerateReportService}, and delivers.</li>
+ *       to the matching {@link GenerateReportService}, and delivers.</li>
  *   <li>{@link #generateAndDeliver(ReportType, GenerateReportRequestDto, ReportFormat, ReportDeliveryConfig)}
  *       — the explicit path when the caller has already built the request and delivery
  *       config itself.</li>
  * </ul>
  */
-public class SdkGenerateAndDeliverService {
+public class GenerateAndDeliverService {
 
-    private final SdkGenerateReportInstanceFactory instanceFactory;
+    private final GenerateReportInstanceFactory instanceFactory;
     private final ReportDeliveryService deliveryService;
-    private final SdkReportRequestFactory requestFactory;
+    private final ReportRequestFactory requestFactory;
 
-    public SdkGenerateAndDeliverService(SdkGenerateReportInstanceFactory instanceFactory,
+    public GenerateAndDeliverService(GenerateReportInstanceFactory instanceFactory,
                                         ReportDeliveryService deliveryService,
-                                        SdkReportRequestFactory requestFactory) {
+                                        ReportRequestFactory requestFactory) {
         this.instanceFactory = instanceFactory;
         this.deliveryService = deliveryService;
         this.requestFactory = requestFactory;
@@ -41,7 +41,7 @@ public class SdkGenerateAndDeliverService {
      * Resolves the report type and format, builds the date window from the
      * frequency, generates via the matching service, then delivers.
      */
-    public ReportResult generateAndDeliver(SdkReportConfig config) {
+    public ReportResult generateAndDeliver(ReportConfig config) {
         if (config == null) {
             throw new ReportGenerationException("Report config is required");
         }
@@ -68,7 +68,7 @@ public class SdkGenerateAndDeliverService {
         return result;
     }
 
-    private static ReportDeliveryConfig toDeliveryConfig(SdkReportConfig config, ReportResult result) {
+    private static ReportDeliveryConfig toDeliveryConfig(ReportConfig config, ReportResult result) {
         ReportDeliveryConfig.Builder builder = ReportDeliveryConfig.builder()
                 .method(DeliveryMethod.fromString(config.getSendReportType()))
                 .fileName(config.getReportFileName() != null ? config.getReportFileName() : result.getFilename())
@@ -93,7 +93,7 @@ public class SdkGenerateAndDeliverService {
         return builder.build();
     }
 
-    private static String buildSenderName(SdkReportConfig config) {
+    private static String buildSenderName(ReportConfig config) {
         String first = config.getSenderFirstName();
         String last = config.getSenderLastName();
         boolean hasFirst = first != null && !first.isBlank();

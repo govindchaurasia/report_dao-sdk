@@ -12,8 +12,9 @@ import java.util.Map;
  * connected-car service alert ({@code serviceAlertId} present), windowed by
  * {@code planner_run_date} and optionally scoped to a single store.
  * <p>
- * Renamed with an {@code Sdk} prefix so the library's bean/type names do not
- * collide with the host's own report services on the classpath.
+ * Library-owned type in package {@code com.lisa.report}; if the host
+ * component-scans a same-named report service, give the beans explicit names to
+ * disambiguate.
  * <p>
  * The SQL lives in the {@code connected-car-alerts} {@code ReportDefinition} (see
  * {@code ReportingModuleAutoConfiguration}); this service maps the typed request
@@ -21,13 +22,13 @@ import java.util.Map;
  * Only non-null request values are passed so the definition's defaults apply
  * otherwise (store {@code 0} = all stores, open date range).
  */
-public class SdkGenerateConnectedCarAlertReportService implements SdkGenerateReportService {
+public class GenerateConnectedCarAlertReportService implements GenerateReportService {
 
     public static final String REPORT_NAME = "connected-car-alerts";
 
     private final ReportingService reportingService;
 
-    public SdkGenerateConnectedCarAlertReportService(ReportingService reportingService) {
+    public GenerateConnectedCarAlertReportService(ReportingService reportingService) {
         this.reportingService = reportingService;
     }
 

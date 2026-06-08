@@ -7,11 +7,11 @@ import com.lisa.report.format.ExcelReportWriter;
 import com.lisa.report.format.JsonReportWriter;
 import com.lisa.report.format.ReportWriter;
 import com.lisa.report.model.ReportDefinition;
-import com.lisa.report.SdkGenerateAndDeliverService;
-import com.lisa.report.SdkGenerateConnectedCarAlertReportService;
-import com.lisa.report.SdkGenerateReportInstanceFactory;
-import com.lisa.report.SdkGenerateReportService;
-import com.lisa.report.SdkReportRequestFactory;
+import com.lisa.report.GenerateAndDeliverService;
+import com.lisa.report.GenerateConnectedCarAlertReportService;
+import com.lisa.report.GenerateReportInstanceFactory;
+import com.lisa.report.GenerateReportService;
+import com.lisa.report.ReportRequestFactory;
 import com.lisa.report.delivery.EmailReportDeliverySender;
 import com.lisa.report.delivery.PasswordZipService;
 import com.lisa.report.delivery.ReportDeliverySender;
@@ -139,7 +139,7 @@ public class ReportingModuleAutoConfiguration {
         // Params map 1:1 to GenerateReportRequestDto: storeIdFK / startDate / endDate.
         // storeId = 0 (default) means "all stores". `vin` excluded (encrypted).
         registry.register(new ReportDefinition(
-                SdkGenerateConnectedCarAlertReportService.REPORT_NAME,
+                GenerateConnectedCarAlertReportService.REPORT_NAME,
                 "SELECT id AS id, "
                         + "store_id_fk AS store_id, "
                         + "customer_id_fk AS customer_id, "
@@ -208,20 +208,20 @@ public class ReportingModuleAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public SdkGenerateConnectedCarAlertReportService sdkGenerateConnectedCarAlertReportService(ReportingService reportingService) {
-        return new SdkGenerateConnectedCarAlertReportService(reportingService);
+    public GenerateConnectedCarAlertReportService generateConnectedCarAlertReportService(ReportingService reportingService) {
+        return new GenerateConnectedCarAlertReportService(reportingService);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public SdkGenerateReportInstanceFactory sdkGenerateReportInstanceFactory(List<SdkGenerateReportService> reportServices) {
-        return new SdkGenerateReportInstanceFactory(reportServices);
+    public GenerateReportInstanceFactory generateReportInstanceFactory(List<GenerateReportService> reportServices) {
+        return new GenerateReportInstanceFactory(reportServices);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public SdkReportRequestFactory sdkReportRequestFactory() {
-        return new SdkReportRequestFactory();
+    public ReportRequestFactory reportRequestFactory() {
+        return new ReportRequestFactory();
     }
 
     // --- Delivery (email / SFTP / password-zip) ---
@@ -253,9 +253,9 @@ public class ReportingModuleAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public SdkGenerateAndDeliverService sdkGenerateAndDeliverService(SdkGenerateReportInstanceFactory sdkGenerateReportInstanceFactory,
+    public GenerateAndDeliverService generateAndDeliverService(GenerateReportInstanceFactory generateReportInstanceFactory,
                                                                      ReportDeliveryService reportDeliveryService,
-                                                                     SdkReportRequestFactory sdkReportRequestFactory) {
-        return new SdkGenerateAndDeliverService(sdkGenerateReportInstanceFactory, reportDeliveryService, sdkReportRequestFactory);
+                                                                     ReportRequestFactory reportRequestFactory) {
+        return new GenerateAndDeliverService(generateReportInstanceFactory, reportDeliveryService, reportRequestFactory);
     }
 }

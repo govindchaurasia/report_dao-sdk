@@ -1,6 +1,6 @@
 package com.lisa.report;
 
-import com.lisa.report.model.SdkReportConfig;
+import com.lisa.report.model.ReportConfig;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -13,21 +13,21 @@ import static java.time.DayOfWeek.SUNDAY;
 
 /**
  * Builds a {@link GenerateReportRequestDto} (the data window + targeting params) from
- * a {@link SdkReportConfig}, driven by its {@link ReportFrequency}.
+ * a {@link ReportConfig}, driven by its {@link ReportFrequency}.
  * <p>
  * This is the library-owned port of the host scheduler's {@code buildRequest(...)}:
  * the date-window math is host-agnostic, so it belongs in the JAR. {@code serviceType}
  * and {@code storeIdFK} mirror the host's mapping from the service interaction (name/id).
  */
-public class SdkReportRequestFactory {
+public class ReportRequestFactory {
 
     /** Build using the JVM default time zone (matches the host's original behavior). */
-    public GenerateReportRequestDto buildRequest(SdkReportConfig config) {
+    public GenerateReportRequestDto buildRequest(ReportConfig config) {
         return buildRequest(config, ZoneId.systemDefault());
     }
 
     /** Build using an explicit time zone for the date-window boundaries. */
-    public GenerateReportRequestDto buildRequest(SdkReportConfig config, ZoneId zoneId) {
+    public GenerateReportRequestDto buildRequest(ReportConfig config, ZoneId zoneId) {
         if (config == null) {
             throw new ReportGenerationException("Report config is required to build a request");
         }

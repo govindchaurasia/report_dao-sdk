@@ -11,9 +11,9 @@ import java.util.Locale;
  * types so a host config's {@code reportType} string maps straight across via
  * {@link #fromString(String)}.
  * <p>
- * A {@link SdkGenerateReportService} bean must be registered for each type that is
+ * A {@link GenerateReportService} bean must be registered for each type that is
  * actually generated. The library ships {@link #CONNECTED_CAR_ALERT}; the host
- * registers its own {@code SdkGenerateReportService} beans for the rest.
+ * registers its own {@code GenerateReportService} beans for the rest.
  */
 public enum ReportType {
 

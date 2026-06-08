@@ -6,8 +6,11 @@ project — the JAR only provides the framework beans via auto-configuration.
 
 The library never depends on host types (host depends on the JAR), so it ships
 its own `ReportType`, `ReportFormat`, `ReportFrequency`, request/config/delivery
-models. Every library class that mirrors a host concept carries an `Sdk` prefix
-to avoid `ConflictingBeanDefinitionException` on the host classpath.
+models. The library's types live in package `com.lisa.report` and intentionally
+share simple names with the host's `com.lisa.service.report.*` classes. Spring
+derives bean names from the simple class name, so if the host component-scans both,
+give the beans explicit names to avoid `ConflictingBeanDefinitionException`. (The
+REST controller keeps the distinct `ReportSdkController` name.)
 
 ---
 
@@ -23,8 +26,8 @@ to avoid `ConflictingBeanDefinitionException` on the host classpath.
 ```
 
 Your existing `spring.datasource.*` (AWS RDS) config is reused — nothing else to
-wire. Auto-configuration exposes `SdkGenerateAndDeliverService`,
-`SdkReportRequestFactory`, `SdkGenerateReportInstanceFactory`, and the delivery
+wire. Auto-configuration exposes `GenerateAndDeliverService`,
+`ReportRequestFactory`, `GenerateReportInstanceFactory`, and the delivery
 beans. All are `@ConditionalOnMissingBean`, so you can override any of them.
 
 ---
@@ -32,7 +35,7 @@ beans. All are `@ConditionalOnMissingBean`, so you can override any of them.
 ## 2. Plug a host report into the framework
 
 Each host report becomes a Spring bean implementing the library's
-`SdkGenerateReportService`. It **returns the rendered bytes** (`ReportResult`) —
+`GenerateReportService`. It **returns the rendered bytes** (`ReportResult`) —
 the framework handles delivery, so you remove the old SFTP/email code from inside
 the report.
 
@@ -41,7 +44,7 @@ package com.lisa.service.report.sdk; // your host package
 
 import com.lisa.report.GenerateReportRequestDto;
 import com.lisa.report.ReportType;
-import com.lisa.report.SdkGenerateReportService;
+import com.lisa.report.GenerateReportService;
 import com.lisa.report.model.ReportFormat;
 import com.lisa.report.model.ReportResult;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +52,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class PerformanceSummarySdkReportService implements SdkGenerateReportService {
+public class PerformanceSummaryReportService implements GenerateReportService {
 
     // Your existing host services / DAOs — re-fetch host entities from the IDs in the request.
     private final EnterpriseService enterpriseService;
@@ -83,11 +86,11 @@ public class PerformanceSummarySdkReportService implements SdkGenerateReportServ
 }
 ```
 
-Add one such bean per `ReportType` you need. `SdkGenerateReportInstanceFactory`
+Add one such bean per `ReportType` you need. `GenerateReportInstanceFactory`
 auto-indexes them by type — no factory edits required.
 
 > The only report that ships with a library implementation is
-> `CONNECTED_CAR_ALERT` (`SdkGenerateConnectedCarAlertReportService`). Every other
+> `CONNECTED_CAR_ALERT` (`GenerateConnectedCarAlertReportService`). Every other
 > `ReportType` is registered by the host as a bean like the one above.
 
 ---
@@ -100,10 +103,10 @@ scheduler. The library does the frequency date-window math **and** the delivery.
 ```java
 package com.lisa.scheduling;
 
-import com.lisa.report.SdkGenerateAndDeliverService;
+import com.lisa.report.GenerateAndDeliverService;
 import com.lisa.report.model.ReportConfigMasterDto; // YOUR host dto
 import com.lisa.report.model.ReportResult;
-import com.lisa.report.model.SdkReportConfig;
+import com.lisa.report.model.ReportConfig;
 import lombok.RequiredArgsConstructor;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -113,7 +116,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class GenerateReportQuartzJob implements Job {
 
-    private final SdkGenerateAndDeliverService sdkGenerateAndDeliverService;
+    private final GenerateAndDeliverService generateAndDeliverService;
     private final ReportConfigMasterService reportConfigMasterService; // your persistence
 
     @Override
@@ -121,7 +124,7 @@ public class GenerateReportQuartzJob implements Job {
         Long configId = context.getMergedJobDataMap().getLong("reportConfigId");
         ReportConfigMasterDto config = reportConfigMasterService.findById(configId);
 
-        SdkReportConfig sdkConfig = SdkReportConfig.builder()
+        ReportConfig sdkConfig = ReportConfig.builder()
                 // what / when
                 .reportType(config.getReportType().name())            // -> library ReportType
                 .reportFrequency(config.getReportFrequency().name())  // -> ReportFrequency window
@@ -154,7 +157,7 @@ public class GenerateReportQuartzJob implements Job {
                 // .strictHostKeyChecking(false)                      // opt out (not recommended)
                 .build();
 
-        ReportResult result = sdkGenerateAndDeliverService.generateAndDeliver(sdkConfig);
+        ReportResult result = generateAndDeliverService.generateAndDeliver(sdkConfig);
         // optional: persist/log result.getFilename(), result.getContent().length
     }
 }
@@ -197,5 +200,5 @@ scheduler.scheduleJob(job, trigger);
 - **Lower-level overload:** if you already build the request/delivery yourself,
   `generateAndDeliver(ReportType, GenerateReportRequestDto, ReportFormat, ReportDeliveryConfig)`
   is still available.
-- **Adding a report** is just adding another `SdkGenerateReportService` bean for
+- **Adding a report** is just adding another `GenerateReportService` bean for
   the relevant `ReportType` — no framework changes.
