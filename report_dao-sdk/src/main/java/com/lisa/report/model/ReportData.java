@@ -1,4 +1,4 @@
-package com.lisa.daosdk.model;
+package com.lisa.report.model;
 
 import java.util.List;
 import java.util.Map;

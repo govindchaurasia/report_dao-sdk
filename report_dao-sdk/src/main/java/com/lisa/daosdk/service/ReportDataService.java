@@ -1,6 +1,6 @@
 package com.lisa.daosdk.service;
 
-import com.lisa.daosdk.model.ReportData;
+import com.lisa.report.model.ReportData;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
