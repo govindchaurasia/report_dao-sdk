@@ -12,7 +12,7 @@ import com.lisa.report.GenerateReportInstanceFactory;
 import com.lisa.report.GenerateReportService;
 import com.lisa.report.service.ReportDefinitionRegistry;
 import com.lisa.report.service.ReportingService;
-import com.lisa.report.web.ReportController;
+import com.lisa.report.web.ReportSdkController;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -195,8 +195,8 @@ public class ReportingModuleAutoConfiguration {
     @ConditionalOnMissingBean
     @ConditionalOnWebApplication
     @ConditionalOnProperty(prefix = "reporting", name = "expose-rest-endpoint", havingValue = "true", matchIfMissing = true)
-    public ReportController reportController(ReportingService reportingService) {
-        return new ReportController(reportingService);
+    public ReportSdkController reportSdkController(ReportingService reportingService) {
+        return new ReportSdkController(reportingService);
     }
 
     @Bean

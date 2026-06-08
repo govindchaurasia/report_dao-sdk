@@ -22,14 +22,17 @@ import java.util.Map;
  * The base path defaults to {@code /api/reports} and can be overridden with the
  * {@code reporting.base-path} property. Any query parameters other than
  * {@code format} are passed through as named SQL parameters.
+ * <p>
+ * Named {@code ReportSdkController} (bean name {@code reportSdkController}) so it
+ * does not collide with a host application's own {@code ReportController} bean.
  */
 @RestController
 @RequestMapping("${reporting.base-path:/api/reports}")
-public class ReportController {
+public class ReportSdkController {
 
     private final ReportingService reportingService;
 
-    public ReportController(ReportingService reportingService) {
+    public ReportSdkController(ReportingService reportingService) {
         this.reportingService = reportingService;
     }
 
