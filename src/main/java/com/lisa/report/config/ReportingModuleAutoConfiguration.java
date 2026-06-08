@@ -11,6 +11,7 @@ import com.lisa.report.SdkGenerateAndDeliverService;
 import com.lisa.report.SdkGenerateConnectedCarAlertReportService;
 import com.lisa.report.SdkGenerateReportInstanceFactory;
 import com.lisa.report.SdkGenerateReportService;
+import com.lisa.report.SdkReportRequestFactory;
 import com.lisa.report.delivery.EmailReportDeliverySender;
 import com.lisa.report.delivery.PasswordZipService;
 import com.lisa.report.delivery.ReportDeliverySender;
@@ -217,6 +218,12 @@ public class ReportingModuleAutoConfiguration {
         return new SdkGenerateReportInstanceFactory(reportServices);
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public SdkReportRequestFactory sdkReportRequestFactory() {
+        return new SdkReportRequestFactory();
+    }
+
     // --- Delivery (email / SFTP / password-zip) ---
 
     @Bean
@@ -247,7 +254,8 @@ public class ReportingModuleAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public SdkGenerateAndDeliverService sdkGenerateAndDeliverService(SdkGenerateReportInstanceFactory sdkGenerateReportInstanceFactory,
-                                                                     ReportDeliveryService reportDeliveryService) {
-        return new SdkGenerateAndDeliverService(sdkGenerateReportInstanceFactory, reportDeliveryService);
+                                                                     ReportDeliveryService reportDeliveryService,
+                                                                     SdkReportRequestFactory sdkReportRequestFactory) {
+        return new SdkGenerateAndDeliverService(sdkGenerateReportInstanceFactory, reportDeliveryService, sdkReportRequestFactory);
     }
 }
