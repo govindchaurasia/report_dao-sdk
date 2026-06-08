@@ -7,9 +7,9 @@ import com.lisa.report.format.ExcelReportWriter;
 import com.lisa.report.format.JsonReportWriter;
 import com.lisa.report.format.ReportWriter;
 import com.lisa.report.model.ReportDefinition;
-import com.lisa.report.GenerateConnectedCarAlertReportService;
-import com.lisa.report.GenerateReportInstanceFactory;
-import com.lisa.report.GenerateReportService;
+import com.lisa.report.SdkGenerateConnectedCarAlertReportService;
+import com.lisa.report.SdkGenerateReportInstanceFactory;
+import com.lisa.report.SdkGenerateReportService;
 import com.lisa.report.service.ReportDefinitionRegistry;
 import com.lisa.report.service.ReportingService;
 import com.lisa.report.web.ReportSdkController;
@@ -132,7 +132,7 @@ public class ReportingModuleAutoConfiguration {
         // Params map 1:1 to GenerateReportRequestDto: storeIdFK / startDate / endDate.
         // storeId = 0 (default) means "all stores". `vin` excluded (encrypted).
         registry.register(new ReportDefinition(
-                GenerateConnectedCarAlertReportService.REPORT_NAME,
+                SdkGenerateConnectedCarAlertReportService.REPORT_NAME,
                 "SELECT id AS id, "
                         + "store_id_fk AS store_id, "
                         + "customer_id_fk AS customer_id, "
@@ -201,13 +201,13 @@ public class ReportingModuleAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public GenerateConnectedCarAlertReportService generateConnectedCarAlertReportService(ReportingService reportingService) {
-        return new GenerateConnectedCarAlertReportService(reportingService);
+    public SdkGenerateConnectedCarAlertReportService sdkGenerateConnectedCarAlertReportService(ReportingService reportingService) {
+        return new SdkGenerateConnectedCarAlertReportService(reportingService);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public GenerateReportInstanceFactory generateReportInstanceFactory(List<GenerateReportService> reportServices) {
-        return new GenerateReportInstanceFactory(reportServices);
+    public SdkGenerateReportInstanceFactory sdkGenerateReportInstanceFactory(List<SdkGenerateReportService> reportServices) {
+        return new SdkGenerateReportInstanceFactory(reportServices);
     }
 }

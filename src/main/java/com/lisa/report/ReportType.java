@@ -6,7 +6,7 @@ package com.lisa.report;
  * This is the library's own type enum (deliberately not the host's
  * {@code com.lisa.enums.ReportType}) so the JAR stays self-contained and does not
  * collide with host classes on the classpath. Add a value here when you implement
- * another {@link GenerateReportService} in the library.
+ * another {@link SdkGenerateReportService} in the library.
  */
 public enum ReportType {
 
