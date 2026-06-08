@@ -37,6 +37,7 @@ public class ReportDeliveryConfig {
     // SFTP-specific.
     private final String remoteDirectory;
     private final boolean strictHostKeyChecking;
+    private final String knownHostsPath;
 
     private ReportDeliveryConfig(Builder builder) {
         this.method = builder.method;
@@ -57,6 +58,7 @@ public class ReportDeliveryConfig {
                 : Collections.unmodifiableMap(new LinkedHashMap<>(builder.mailProperties));
         this.remoteDirectory = builder.remoteDirectory;
         this.strictHostKeyChecking = builder.strictHostKeyChecking;
+        this.knownHostsPath = builder.knownHostsPath;
     }
 
     public DeliveryMethod getMethod() {
@@ -123,6 +125,10 @@ public class ReportDeliveryConfig {
         return strictHostKeyChecking;
     }
 
+    public String getKnownHostsPath() {
+        return knownHostsPath;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -143,7 +149,8 @@ public class ReportDeliveryConfig {
         private boolean startTls = true;
         private Map<String, String> mailProperties;
         private String remoteDirectory;
-        private boolean strictHostKeyChecking = false;
+        private boolean strictHostKeyChecking = true;
+        private String knownHostsPath;
 
         public Builder method(DeliveryMethod method) {
             this.method = method;
@@ -222,6 +229,11 @@ public class ReportDeliveryConfig {
 
         public Builder strictHostKeyChecking(boolean strictHostKeyChecking) {
             this.strictHostKeyChecking = strictHostKeyChecking;
+            return this;
+        }
+
+        public Builder knownHostsPath(String knownHostsPath) {
+            this.knownHostsPath = knownHostsPath;
             return this;
         }
 

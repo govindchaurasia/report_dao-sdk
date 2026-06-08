@@ -41,10 +41,16 @@ public class SftpReportDeliverySender implements ReportDeliverySender {
         ChannelSftp channel = null;
         try {
             JSch jsch = new JSch();
+            if (StringUtils.hasText(config.getKnownHostsPath())) {
+                jsch.setKnownHosts(config.getKnownHostsPath());
+            }
             int port = config.getPort() != null ? config.getPort() : DEFAULT_PORT;
             session = jsch.getSession(config.getUsername(), config.getHost(), port);
             session.setPassword(config.getPassword());
 
+            // Secure by default: verify the server host key. The host must supply a
+            // known_hosts file (knownHostsPath) for this to succeed, or explicitly
+            // opt out via strictHostKeyChecking(false).
             Properties sessionConfig = new Properties();
             sessionConfig.put("StrictHostKeyChecking", config.isStrictHostKeyChecking() ? "yes" : "no");
             session.setConfig(sessionConfig);

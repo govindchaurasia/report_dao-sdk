@@ -25,7 +25,14 @@ public class ReportDeliveryService {
     public ReportDeliveryService(List<ReportDeliverySender> senders, PasswordZipService passwordZipService) {
         this.sendersByMethod = new EnumMap<>(DeliveryMethod.class);
         for (ReportDeliverySender sender : senders) {
-            this.sendersByMethod.put(sender.getSupportedMethod(), sender);
+            DeliveryMethod method = sender.getSupportedMethod();
+            ReportDeliverySender existing = this.sendersByMethod.putIfAbsent(method, sender);
+            if (existing != null) {
+                // Fail fast rather than let EnumMap silently pick one by list order.
+                throw new ReportDeliveryException("Multiple delivery senders registered for method " + method
+                        + ": " + existing.getClass().getName() + " and " + sender.getClass().getName()
+                        + ". Exclude one (e.g. override the default bean).");
+            }
         }
         this.passwordZipService = passwordZipService;
     }
