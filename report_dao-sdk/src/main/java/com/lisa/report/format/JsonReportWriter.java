@@ -3,7 +3,7 @@ package com.lisa.report.format;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.lisa.daosdk.model.ReportData;
+import com.lisa.report.model.ReportData;
 import com.lisa.report.ReportGenerationException;
 import com.lisa.report.model.ReportFormat;
 import com.lisa.report.model.ReportResult;

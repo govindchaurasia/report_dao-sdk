@@ -12,12 +12,12 @@
     </parent>
 
     <groupId>com.lisa</groupId>
-    <artifactId>dao-sdk</artifactId>
+    <artifactId>report_dao-sdk</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>dao-sdk</name>
-    <description>Shared data-access SDK and dependency hub for ReportingModule</description>
+    <name>report_dao-sdk</name>
+    <description>Self-contained data-access + multi-format (JSON/Excel/CSV) reporting library, consumed as a dependency JAR</description>
 
     <properties>
         <java.version>17</java.version>
@@ -45,7 +45,7 @@
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
 
-        <!-- Report-format libraries, kept here so dao-sdk is the single dependency hub -->
+        <!-- Report-format libraries -->
         <!-- JSON -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -66,6 +66,28 @@
             <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
             <version>${opencsv.version}</version>
+        </dependency>
+
+        <!-- REST controller support. 'provided' because the host Spring Boot app already
+             supplies the web runtime (embedded Tomcat) - this avoids bundling a second one. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Quartz integration helper. 'provided' because the host app owns the scheduler. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-quartz</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Generates metadata for the @ConfigurationProperties below -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

@@ -1,15 +1,16 @@
-# ReportingModule
+# report_dao-sdk
 
-A multi-format (JSON / Excel / CSV) Spring Boot reporting library, designed to be dropped into an existing Spring Boot application as a dependency JAR. It pulls data from the host app's database (AWS RDS, MySQL/MariaDB) and can be triggered both via a REST endpoint and via a Quartz-scheduled job.
+A self-contained, multi-format (JSON / Excel / CSV) Spring Boot reporting library, designed to be dropped into an existing Spring Boot application as a single dependency JAR. It pulls data from the host app's database (AWS RDS, MySQL/MariaDB) and can be triggered both via a REST endpoint and via a Quartz-scheduled job.
 
-## Projects
+## Project
 
-Two standalone Maven projects (Java 17, Spring Boot 3.5.3), built as plain dependency JARs (no executable repackaging):
+One standalone Maven project (Java 17, Spring Boot 3.5.3), built as a plain dependency JAR (no executable repackaging):
 
-- **`dao-sdk`** (`com.lisa:dao-sdk`) — the data-access layer and single dependency hub. Holds Spring Data JPA + Hibernate, the MySQL/MariaDB driver, and the report-format libraries (Apache POI, OpenCSV, Jackson). These flow transitively into `ReportingModule`.
-- **`ReportingModule`** (`com.lisa:reporting-module`) — depends on `dao-sdk`; generates reports in JSON/Excel/CSV, exposes a REST controller, and ships a Quartz job + service beans for scheduled generation.
+- **`report_dao-sdk`** (`com.lisa:report_dao-sdk:1.0.0`) — the whole library in a single module: the data-access layer (Spring Data JPA + Hibernate, the MySQL/MariaDB driver) plus the reporting layer (JSON/Excel/CSV writers, a REST controller, and a Quartz job + service beans for scheduled generation). The report-format libraries (Apache POI, OpenCSV, Jackson) are bundled here too.
 
-Both modules use Spring Boot auto-configuration (`META-INF/spring/.../AutoConfiguration.imports`), so the host app just adds the JAR — no manual `@ComponentScan` / `@EntityScan` / `@EnableJpaRepositories`.
+> Earlier this was split into two modules (`dao-sdk` + `ReportingModule`); they have been merged into this single `report_dao-sdk` module. The data-access classes keep their `com.lisa.daosdk` package; everything else lives under `com.lisa.report`.
+
+The module uses Spring Boot auto-configuration (`META-INF/spring/.../AutoConfiguration.imports` lists both `DaoSdkAutoConfiguration` and `ReportingModuleAutoConfiguration`), so the host app just adds the JAR — no manual `@ComponentScan` / `@EntityScan` / `@EnableJpaRepositories`.
 
 ## Build & Operate
 
@@ -20,31 +21,33 @@ export JAVA_HOME=/nix/store/chcmn5mpj3l5jzxfs2krqximz3276i8v-openjdk-19.0.2+7/li
 export PATH="/nix/store/4lslm4qgsyjmpdw64w0a8q5bdmlzjvjd-apache-maven-3.8.6/maven/bin:$JAVA_HOME/bin:$PATH"
 ```
 
-Then build in dependency order (`dao-sdk` first, so `ReportingModule` can resolve it from the local `~/.m2` repo):
+Then build and install the single module into the local `~/.m2` repo:
 
 ```bash
-mvn -f dao-sdk/pom.xml -DskipTests install
-mvn -f ReportingModule/pom.xml -DskipTests install
+mvn -f report_dao-sdk/pom.xml -DskipTests install
 ```
 
-- JDK is GraalVM/OpenJDK 19, but both modules compile with `--release 17`, so the JARs target Java 17 and run in your host's Java 17 runtime.
+- JDK is GraalVM/OpenJDK 19, but the module compiles with `--release 17`, so the JAR targets Java 17 and runs in your host's Java 17 runtime.
 
 ## Stack
 
 - Java 17, Maven, Spring Boot 3.5.3
 - Data: Spring Data JPA + Hibernate, MySQL/MariaDB (`com.mysql:mysql-connector-j`)
 - Reports: Apache POI (Excel), OpenCSV (CSV), Jackson (JSON)
-- Web: `spring-boot-starter-web` (`provided` in ReportingModule — host supplies the runtime)
+- Web: `spring-boot-starter-web` (`provided` — host supplies the runtime)
 - Scheduling: `spring-boot-starter-quartz` (`provided` — host owns the scheduler)
 
 ## Where things live
 
-- `dao-sdk/src/main/java/com/lisa/daosdk/`
-  - `service/ReportDataService` — runs read-only native SQL (`@PersistenceContext` `EntityManager`), returns schema-agnostic rows
+All under `report_dao-sdk/src/main/java/`:
+
+- `com/lisa/daosdk/` (data-access)
+  - `service/ReportDataService` — runs read-only native SQL (`@PersistenceContext` `EntityManager`), returns schema-agnostic rows (`com.lisa.report.model.ReportData`)
   - `config/DaoSdkAutoConfiguration` — exposes the `ReportDataService` bean (after JPA auto-config, gated on `EntityManagerFactory`)
-- `ReportingModule/src/main/java/com/lisa/reportingmodule/`
+- `com/lisa/report/` (reporting)
   - `service/ReportingService` — orchestrates fetch → render; called by REST and Quartz
   - `service/ReportDefinitionRegistry` — named report definitions (host registers its own)
+  - `model/` — `ReportData`, `ReportDefinition`, `ReportFormat`, `ReportResult`
   - `format/` — `JsonReportWriter`, `ExcelReportWriter`, `CsvReportWriter`
   - `web/ReportController` — `GET ${reporting.base-path:/api/reports}` and `/{name}?format=`
   - `scheduling/ReportGenerationJob` — Quartz job writing reports to disk
@@ -52,7 +55,7 @@ mvn -f ReportingModule/pom.xml -DskipTests install
 
 ## How the host app uses it
 
-1. Add `com.lisa:reporting-module:1.0.0` as a dependency (it transitively brings `dao-sdk`).
+1. Add `com.lisa:report_dao-sdk:1.0.0` as a single dependency.
 2. Configure the datasource (`spring.datasource.*`) for your AWS RDS instance as usual.
 3. Trigger reports via `GET /api/reports/{name}?format=excel`, or schedule `ReportGenerationJob` in Quartz with a `JobDataMap` containing `reportName` (+ optional `format` and SQL params).
 4. To add more reports, autowire `ReportDefinitionRegistry` and call `register(...)` from the host.
@@ -103,10 +106,10 @@ The **Connected Car Alert** report selects rows where `serviceAlertId IS NOT NUL
 
 ## Architecture decisions
 
-- `dao-sdk` is the dependency hub by design: all shared/report libraries live there in `compile` scope so they reach `ReportingModule` transitively (per the user's request).
+- Single self-contained module (`report_dao-sdk`): data-access and reporting ship in one JAR, with all shared/report libraries (JPA, MySQL driver, POI, OpenCSV, Jackson) bundled. `ReportData` lives in `com.lisa.report.model` and the data-access classes stay in `com.lisa.daosdk` — one JAR, so there is no module dependency cycle.
 - Reports are defined server-side (name → SQL in `ReportDefinitionRegistry`) rather than accepting raw SQL over REST, to avoid SQL injection.
 - Report data is kept schema-agnostic (`List<Map<String,Object>>` via native-query `Tuple`s), so the formatters work for any query without coupling to entities.
-- `spring-boot-starter-web` and `-quartz` are `provided` in `ReportingModule` — the host already supplies both runtimes, avoiding a duplicate embedded server/scheduler.
+- `spring-boot-starter-web` and `-quartz` are `provided` — the host already supplies both runtimes, avoiding a duplicate embedded server/scheduler.
 
 ## Notes
 
@@ -115,4 +118,4 @@ The **Connected Car Alert** report selects rows where `serviceAlertId IS NOT NUL
 ## User preferences
 
 - Build tool: Maven. Java 17 + Spring Boot 3.5.3. Data access: Spring Data JPA (Hibernate). DB: MySQL/MariaDB (AWS RDS). Wiring: Spring Boot auto-configuration (starter-style).
-- groupId `com.lisa`; base packages `com.lisa.daosdk` (dao-sdk) and `com.lisa.report` (ReportingModule).
+- groupId `com.lisa`; single module `report_dao-sdk`; base packages `com.lisa.daosdk` (data-access) and `com.lisa.report` (reporting, incl. `model.ReportData`).

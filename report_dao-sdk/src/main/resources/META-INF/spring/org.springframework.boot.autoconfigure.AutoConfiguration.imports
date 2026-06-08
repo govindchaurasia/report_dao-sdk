@@ -1,1 +1,2 @@
+com.lisa.daosdk.config.DaoSdkAutoConfiguration
 com.lisa.report.config.ReportingModuleAutoConfiguration

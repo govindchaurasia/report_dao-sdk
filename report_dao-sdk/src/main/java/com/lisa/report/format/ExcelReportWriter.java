@@ -1,6 +1,6 @@
 package com.lisa.report.format;
 
-import com.lisa.daosdk.model.ReportData;
+import com.lisa.report.model.ReportData;
 import com.lisa.report.ReportGenerationException;
 import com.lisa.report.model.ReportFormat;
 import com.lisa.report.model.ReportResult;
