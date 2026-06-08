@@ -24,6 +24,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <poi.version>5.3.0</poi.version>
         <opencsv.version>5.9</opencsv.version>
+        <jsch.version>0.2.21</jsch.version>
+        <zip4j.version>2.11.5</zip4j.version>
     </properties>
 
     <dependencies>
@@ -66,6 +68,25 @@
             <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
             <version>${opencsv.version}</version>
+        </dependency>
+
+        <!-- Delivery: email (SMTP via Spring's JavaMailSender). Bundled (compile)
+             because the host may not already supply a mail stack. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <!-- Delivery: SFTP upload (maintained JSch fork). -->
+        <dependency>
+            <groupId>com.github.mwiede</groupId>
+            <artifactId>jsch</artifactId>
+            <version>${jsch.version}</version>
+        </dependency>
+        <!-- Delivery: password-protected (AES) zip of the report file. -->
+        <dependency>
+            <groupId>net.lingala.zip4j</groupId>
+            <artifactId>zip4j</artifactId>
+            <version>${zip4j.version}</version>
         </dependency>
 
         <!-- REST controller support. 'provided' because the host Spring Boot app already

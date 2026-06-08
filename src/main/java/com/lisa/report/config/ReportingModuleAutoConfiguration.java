@@ -7,9 +7,15 @@ import com.lisa.report.format.ExcelReportWriter;
 import com.lisa.report.format.JsonReportWriter;
 import com.lisa.report.format.ReportWriter;
 import com.lisa.report.model.ReportDefinition;
+import com.lisa.report.SdkGenerateAndDeliverService;
 import com.lisa.report.SdkGenerateConnectedCarAlertReportService;
 import com.lisa.report.SdkGenerateReportInstanceFactory;
 import com.lisa.report.SdkGenerateReportService;
+import com.lisa.report.delivery.EmailReportDeliverySender;
+import com.lisa.report.delivery.PasswordZipService;
+import com.lisa.report.delivery.ReportDeliverySender;
+import com.lisa.report.delivery.ReportDeliveryService;
+import com.lisa.report.delivery.SftpReportDeliverySender;
 import com.lisa.report.service.ReportDefinitionRegistry;
 import com.lisa.report.service.ReportingService;
 import com.lisa.report.web.ReportSdkController;
@@ -209,5 +215,39 @@ public class ReportingModuleAutoConfiguration {
     @ConditionalOnMissingBean
     public SdkGenerateReportInstanceFactory sdkGenerateReportInstanceFactory(List<SdkGenerateReportService> reportServices) {
         return new SdkGenerateReportInstanceFactory(reportServices);
+    }
+
+    // --- Delivery (email / SFTP / password-zip) ---
+
+    @Bean
+    @ConditionalOnMissingBean
+    public PasswordZipService passwordZipService() {
+        return new PasswordZipService();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public EmailReportDeliverySender emailReportDeliverySender() {
+        return new EmailReportDeliverySender();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public SftpReportDeliverySender sftpReportDeliverySender() {
+        return new SftpReportDeliverySender();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ReportDeliveryService reportDeliveryService(List<ReportDeliverySender> deliverySenders,
+                                                       PasswordZipService passwordZipService) {
+        return new ReportDeliveryService(deliverySenders, passwordZipService);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public SdkGenerateAndDeliverService sdkGenerateAndDeliverService(SdkGenerateReportInstanceFactory sdkGenerateReportInstanceFactory,
+                                                                     ReportDeliveryService reportDeliveryService) {
+        return new SdkGenerateAndDeliverService(sdkGenerateReportInstanceFactory, reportDeliveryService);
     }
 }
