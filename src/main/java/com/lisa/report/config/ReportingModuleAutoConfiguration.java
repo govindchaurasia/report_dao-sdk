@@ -1,7 +1,7 @@
 package com.lisa.report.config;
 
-import com.lisa.daosdk.config.DaoSdkAutoConfiguration;
-import com.lisa.daosdk.service.ReportDataService;
+import com.lisa.report.config.DaoSdkAutoConfiguration;
+import com.lisa.report.service.ReportDataService;
 import com.lisa.report.format.CsvReportWriter;
 import com.lisa.report.format.ExcelReportWriter;
 import com.lisa.report.format.JsonReportWriter;

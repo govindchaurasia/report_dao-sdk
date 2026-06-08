@@ -1,6 +1,6 @@
-package com.lisa.daosdk.config;
+package com.lisa.report.config;
 
-import com.lisa.daosdk.service.ReportDataService;
+import com.lisa.report.service.ReportDataService;
 import jakarta.persistence.EntityManagerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;

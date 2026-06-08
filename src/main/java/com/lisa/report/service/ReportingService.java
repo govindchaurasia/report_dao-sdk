@@ -1,7 +1,7 @@
 package com.lisa.report.service;
 
 import com.lisa.report.model.ReportData;
-import com.lisa.daosdk.service.ReportDataService;
+import com.lisa.report.service.ReportDataService;
 import com.lisa.report.ReportGenerationException;
 import com.lisa.report.format.ReportWriter;
 import com.lisa.report.model.ReportDefinition;

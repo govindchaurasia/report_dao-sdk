@@ -1,4 +1,4 @@
-package com.lisa.daosdk.service;
+package com.lisa.report.service;
 
 import com.lisa.report.model.ReportData;
 import jakarta.persistence.EntityManager;
