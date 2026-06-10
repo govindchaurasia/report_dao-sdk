@@ -143,7 +143,7 @@ public class ReportingModuleAutoConfiguration {
         registry.register(new ReportDefinition(
                 GenerateConnectedCarAlertReportService.REPORT_NAME,
                 "SELECT DATE(fsi.actual_i_date) AS reportDate, "
-                        + "sm.store_id AS storeCode, "
+                        + "SUBSTRING_INDEX(sm.store_id, '~', -1) AS storeCode, "
                         + "sm.store_name AS storeName, "
                         + "fsi.planned_service_type AS interaction, "
                         + "sm.boc_id AS asdMarket, "
