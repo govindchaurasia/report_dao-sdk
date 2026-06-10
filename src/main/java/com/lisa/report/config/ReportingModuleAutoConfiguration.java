@@ -133,36 +133,40 @@ public class ReportingModuleAutoConfiguration {
                         + "ORDER BY ro_opened_date DESC",
                 Map.of("startDate", "1970-01-01", "endDate", "2999-12-31 23:59:59")));
 
-        // 6. Connected Car Alert report.
-        // Rows that carry a connected-car service alert (serviceAlertId present),
-        // windowed by planner_run_date and optionally scoped to a single store.
-        // Params map 1:1 to GenerateReportRequestDto: storeIdFK / startDate / endDate.
-        // storeId = 0 (default) means "all stores". `vin` excluded (encrypted).
+        // 6. Connected Car Alert report — daily per-store engagement funnel for
+        // connected-car alert interactions (planned_service_type LIKE '%ALERT%'),
+        // over jag_future_service_interaction joined to jag_store_master (store /
+        // ASD attributes) and svc_messages_instance (central / dealer e-mail
+        // handoff counts). Windowed by actual_i_date; optionally scoped to one
+        // enterprise and/or store (0 = all). Params map to GenerateReportRequestDto:
+        // enterpriseId / storeIdFK / startDate / endDate.
         registry.register(new ReportDefinition(
                 GenerateConnectedCarAlertReportService.REPORT_NAME,
-                "SELECT id AS id, "
-                        + "store_id_fk AS store_id, "
-                        + "customer_id_fk AS customer_id, "
-                        + "service_vehicle_id_fk AS service_vehicle_id, "
-                        + "serviceAlertId AS service_alert_id, "
-                        + "brand AS brand, "
-                        + "predicted_mileage AS predicted_mileage, "
-                        + "planned_service_type AS planned_service_type, "
-                        + "planned_date AS planned_date, "
-                        + "estimated_due_date AS estimated_due_date, "
-                        + "status AS status, "
-                        + "appt_status AS appt_status, "
-                        + "appt_date AS appt_date, "
-                        + "line_type AS line_type, "
-                        + "type AS type, "
-                        + "predictive_planner_id AS predictive_planner_id, "
-                        + "planner_run_date AS planner_run_date "
-                        + "FROM fsi_custom_search_outbox "
-                        + "WHERE serviceAlertId IS NOT NULL "
-                        + "AND (:storeId = 0 OR store_id_fk = :storeId) "
-                        + "AND planner_run_date BETWEEN :startDate AND :endDate "
-                        + "ORDER BY planner_run_date DESC",
-                Map.of("storeId", "0", "startDate", "1970-01-01", "endDate", "2999-12-31 23:59:59")));
+                "SELECT DATE(fsi.actual_i_date) AS reportDate, "
+                        + "sm.store_id AS storeCode, "
+                        + "sm.store_name AS storeName, "
+                        + "fsi.planned_service_type AS interaction, "
+                        + "sm.boc_id AS asdMarket, "
+                        + "sm.area_service_director AS asd, "
+                        + "COUNT(DISTINCT CASE WHEN fsi.appt_phase IN ('CONTACTED','RESPONDED','ENGAGED','APPT_BOOKING') THEN fsi.id END) AS contacted, "
+                        + "COUNT(DISTINCT CASE WHEN fsi.appt_phase IN ('RESPONDED','ENGAGED','APPT_BOOKING') THEN fsi.id END) AS responded, "
+                        + "COUNT(DISTINCT CASE WHEN fsi.appt_phase IN ('ENGAGED','APPT_BOOKING') THEN fsi.id END) AS engaged, "
+                        + "COUNT(DISTINCT CASE WHEN svc.notificationType = 'INTERNAL_NOTIFICATION' AND svc.messageType = 'EMAIL' THEN fsi.id END) AS centralHandoff, "
+                        + "COUNT(DISTINCT CASE WHEN svc.notificationType = 'INTERNAL_NOTIFICATION_GM' AND svc.messageType = 'EMAIL' THEN fsi.id END) AS dealerHandoff, "
+                        + "COUNT(DISTINCT CASE WHEN fsi.appt_phase = 'APPT_BOOKING' THEN fsi.id END) AS appointments "
+                        + "FROM jag_future_service_interaction fsi "
+                        + "INNER JOIN jag_store_master sm ON sm.id = fsi.store_id_fk "
+                        + "LEFT JOIN svc_messages_instance svc "
+                        + "ON svc.future_service_interaction_id_fk = fsi.id "
+                        + "AND svc.messageType = 'EMAIL' "
+                        + "AND svc.notificationType IN ('INTERNAL_NOTIFICATION','INTERNAL_NOTIFICATION_GM') "
+                        + "WHERE (:enterpriseId = 0 OR sm.enterprise_id_fk = :enterpriseId) "
+                        + "AND fsi.planned_service_type LIKE '%ALERT%' "
+                        + "AND fsi.actual_i_date BETWEEN :startDate AND :endDate "
+                        + "AND (:storeId = 0 OR fsi.store_id_fk = :storeId) "
+                        + "GROUP BY DATE(fsi.actual_i_date), sm.store_id, sm.store_name, sm.boc_id, sm.area_service_director, fsi.planned_service_type "
+                        + "ORDER BY DATE(fsi.actual_i_date), sm.store_id",
+                Map.of("enterpriseId", "0", "storeId", "0", "startDate", "1970-01-01", "endDate", "2999-12-31 23:59:59")));
 
         // 7. Daily store engagement funnel, joined to jag_store_master for the
         // store name and ASD attributes. Column aliases match the requested Excel
