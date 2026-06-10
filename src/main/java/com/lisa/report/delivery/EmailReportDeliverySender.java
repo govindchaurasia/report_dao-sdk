@@ -1,6 +1,9 @@
 package com.lisa.report.delivery;
 
 import com.lisa.report.ReportDeliveryException;
+import jakarta.mail.NoSuchProviderException;
+import jakarta.mail.Provider;
+import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -55,6 +58,8 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
         }
 
         try {
+            ensureSmtpProvider(mailSender.getSession());
+
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
 
@@ -82,6 +87,42 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
             throw new ReportDeliveryException("Failed to set email sender name", ex);
         } catch (Exception ex) {
             throw new ReportDeliveryException("Failed to send report email to: " + config.getToAddresses(), ex);
+        }
+    }
+
+    /**
+     * Ensure the {@code smtp}/{@code smtps} transport providers are registered on the session.
+     * <p>
+     * JavaMail discovers transport providers from the {@code META-INF/javamail.providers}
+     * resource shipped inside the mail implementation jar (Eclipse Angus Mail). When the host
+     * application repackages itself into a shaded/uber jar, that resource is frequently dropped
+     * or overwritten, even though the Angus implementation classes remain on the classpath. The
+     * result is {@code NoSuchProviderException: smtp} at send time. Registering the providers
+     * explicitly here makes delivery resilient to how the host packages itself.
+     */
+    private static void ensureSmtpProvider(Session session) {
+        if (hasProvider(session, "smtp")) {
+            return;
+        }
+        try {
+            // Confirm the Angus implementation classes are actually present before registering.
+            Class.forName("org.eclipse.angus.mail.smtp.SMTPTransport");
+            session.addProvider(new Provider(Provider.Type.TRANSPORT, "smtp",
+                    "org.eclipse.angus.mail.smtp.SMTPTransport", "Eclipse Angus", null));
+            session.addProvider(new Provider(Provider.Type.TRANSPORT, "smtps",
+                    "org.eclipse.angus.mail.smtp.SMTPSSLTransport", "Eclipse Angus", null));
+        } catch (Throwable ignored) {
+            // Angus is not on the classpath (or its layout changed); nothing more we can do here.
+            // The original NoSuchProviderException will surface from send() with a clear message.
+        }
+    }
+
+    private static boolean hasProvider(Session session, String protocol) {
+        try {
+            session.getProvider(protocol);
+            return true;
+        } catch (NoSuchProviderException ex) {
+            return false;
         }
     }
 
