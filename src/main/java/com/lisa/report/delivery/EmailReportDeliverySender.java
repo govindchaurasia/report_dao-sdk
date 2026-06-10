@@ -90,31 +90,53 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
         }
     }
 
+    /** Candidate Jakarta Mail 2.x SMTP transport implementations, in preference order:
+     *  {@code {smtpClass, smtpsClass}}. Eclipse Angus is the reference impl since Jakarta Mail
+     *  2.0.2; the legacy {@code com.sun.mail} classes cover hosts still on that implementation. */
+    private static final String[][] SMTP_IMPL_CANDIDATES = {
+            {"org.eclipse.angus.mail.smtp.SMTPTransport", "org.eclipse.angus.mail.smtp.SMTPSSLTransport"},
+            {"com.sun.mail.smtp.SMTPTransport", "com.sun.mail.smtp.SMTPSSLTransport"},
+    };
+
     /**
      * Ensure the {@code smtp}/{@code smtps} transport providers are registered on the session.
      * <p>
      * JavaMail discovers transport providers from the {@code META-INF/javamail.providers}
      * resource shipped inside the mail implementation jar (Eclipse Angus Mail). When the host
      * application repackages itself into a shaded/uber jar, that resource is frequently dropped
-     * or overwritten, even though the Angus implementation classes remain on the classpath. The
-     * result is {@code NoSuchProviderException: smtp} at send time. Registering the providers
-     * explicitly here makes delivery resilient to how the host packages itself.
+     * or overwritten, even though the implementation classes remain on the classpath. The result
+     * is {@code NoSuchProviderException: smtp} at send time. Registering the providers explicitly
+     * here makes delivery resilient to how the host packages itself.
+     * <p>
+     * If discovery already works (the provider is present), this is a no-op. If no mail
+     * implementation can be loaded at all, a clear {@link ReportDeliveryException} is thrown with
+     * remediation guidance instead of letting a cryptic {@code NoSuchProviderException} surface.
      */
     private static void ensureSmtpProvider(Session session) {
         if (hasProvider(session, "smtp")) {
             return;
         }
-        try {
-            // Confirm the Angus implementation classes are actually present before registering.
-            Class.forName("org.eclipse.angus.mail.smtp.SMTPTransport");
-            session.addProvider(new Provider(Provider.Type.TRANSPORT, "smtp",
-                    "org.eclipse.angus.mail.smtp.SMTPTransport", "Eclipse Angus", null));
-            session.addProvider(new Provider(Provider.Type.TRANSPORT, "smtps",
-                    "org.eclipse.angus.mail.smtp.SMTPSSLTransport", "Eclipse Angus", null));
-        } catch (Throwable ignored) {
-            // Angus is not on the classpath (or its layout changed); nothing more we can do here.
-            // The original NoSuchProviderException will surface from send() with a clear message.
+        for (String[] impl : SMTP_IMPL_CANDIDATES) {
+            try {
+                // Confirm the implementation classes are actually present before registering.
+                Class.forName(impl[0]);
+                session.addProvider(new Provider(Provider.Type.TRANSPORT, "smtp", impl[0], "Jakarta Mail", null));
+                session.addProvider(new Provider(Provider.Type.TRANSPORT, "smtps", impl[1], "Jakarta Mail", null));
+                return;
+            } catch (Throwable ignored) {
+                // This implementation is not on the classpath; try the next candidate.
+            }
         }
+        throw new ReportDeliveryException(
+                "No Jakarta Mail SMTP implementation is available on the host classpath: the 'jakarta.mail' "
+                + "API is present, but neither Eclipse Angus Mail (org.eclipse.angus:jakarta.mail) nor the "
+                + "legacy com.sun.mail implementation could be loaded, so the 'smtp' transport cannot be "
+                + "created (NoSuchProviderException: smtp). Add 'org.eclipse.angus:jakarta.mail' to the host "
+                + "runtime classpath (report_dao-sdk already declares it transitively via "
+                + "spring-boot-starter-mail, so this usually means the host excludes it or the dependency was "
+                + "not refreshed). If the host builds a shaded/uber JAR, also merge META-INF service resources "
+                + "(e.g. the Maven Shade plugin's ServicesResourceTransformer) so the mail provider "
+                + "registration is preserved.");
     }
 
     private static boolean hasProvider(Session session, String protocol) {
