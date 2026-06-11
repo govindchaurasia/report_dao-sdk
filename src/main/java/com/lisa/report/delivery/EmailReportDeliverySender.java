@@ -135,8 +135,8 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
                 if (canCreateTransport(session, "smtp")) {
                     return;
                 }
-            } catch (Throwable ignored) {
-                // This implementation is not usable; try the next candidate.
+            } catch (ReflectiveOperationException | LinkageError | RuntimeException ignored) {
+                // This implementation is missing or not usable; try the next candidate.
             }
         }
         throw new ReportDeliveryException(
