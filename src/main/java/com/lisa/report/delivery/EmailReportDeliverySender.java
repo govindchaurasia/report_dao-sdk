@@ -46,12 +46,27 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
         mailSender.setPassword(config.getPassword());
         mailSender.setDefaultEncoding(StandardCharsets.UTF_8.name());
 
+        boolean implicitSsl = useImplicitSsl(config);
+
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
         if (StringUtils.hasText(config.getUsername())) {
             props.put("mail.smtp.auth", "true");
         }
-        props.put("mail.smtp.starttls.enable", String.valueOf(config.isStartTls()));
+        if (implicitSsl) {
+            // Port 465 (SMTPS): the socket is TLS-wrapped from the first byte, so we must NOT
+            // speak plaintext (the server replies with EOF / "bad greeting"). Use implicit SSL
+            // and disable STARTTLS, which is mutually exclusive with an already-encrypted socket.
+            props.put("mail.smtp.ssl.enable", "true");
+            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            props.put("mail.smtp.socketFactory.fallback", "false");
+            if (config.getPort() != null) {
+                props.put("mail.smtp.socketFactory.port", String.valueOf(config.getPort()));
+            }
+            props.put("mail.smtp.starttls.enable", "false");
+        } else {
+            props.put("mail.smtp.starttls.enable", String.valueOf(config.isStartTls()));
+        }
         for (Map.Entry<String, String> entry : config.getMailProperties().entrySet()) {
             props.put(entry.getKey(), entry.getValue());
         }
@@ -87,6 +102,21 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
         } catch (Exception ex) {
             throw new ReportDeliveryException("Failed to send report email to: " + config.getToAddresses(), ex);
         }
+    }
+
+    /** Conventional implicit-SSL SMTP port (SMTPS). */
+    private static final int SMTPS_PORT = 465;
+
+    /**
+     * Whether to use implicit SSL/TLS (the whole connection is TLS-wrapped, as SMTPS port 465
+     * requires). Honors an explicit {@link ReportDeliveryConfig#getSslEnable()} when set;
+     * otherwise auto-detects from the port (465 ⇒ implicit SSL).
+     */
+    private static boolean useImplicitSsl(ReportDeliveryConfig config) {
+        if (config.getSslEnable() != null) {
+            return config.getSslEnable();
+        }
+        return config.getPort() != null && config.getPort() == SMTPS_PORT;
     }
 
     /** Candidate Jakarta Mail 2.x SMTP transport implementations, in preference order:

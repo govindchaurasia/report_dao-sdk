@@ -32,6 +32,7 @@ public class ReportDeliveryConfig {
     private final String subject;
     private final String body;
     private final boolean startTls;
+    private final Boolean sslEnable;
     private final Map<String, String> mailProperties;
 
     // SFTP-specific.
@@ -53,6 +54,7 @@ public class ReportDeliveryConfig {
         this.subject = builder.subject;
         this.body = builder.body;
         this.startTls = builder.startTls;
+        this.sslEnable = builder.sslEnable;
         this.mailProperties = builder.mailProperties == null
                 ? Collections.emptyMap()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(builder.mailProperties));
@@ -113,6 +115,16 @@ public class ReportDeliveryConfig {
         return startTls;
     }
 
+    /**
+     * Whether to use implicit SSL/TLS (SMTPS) for the whole connection, as required by
+     * SMTP servers listening on port 465. {@code null} means "auto-detect": the sender
+     * enables implicit SSL when the port is 465 and otherwise uses plain SMTP (with
+     * STARTTLS when {@link #isStartTls()} is true). Set it explicitly to force either mode.
+     */
+    public Boolean getSslEnable() {
+        return sslEnable;
+    }
+
     public Map<String, String> getMailProperties() {
         return mailProperties;
     }
@@ -147,6 +159,7 @@ public class ReportDeliveryConfig {
         private String subject;
         private String body;
         private boolean startTls = true;
+        private Boolean sslEnable;
         private Map<String, String> mailProperties;
         private String remoteDirectory;
         private boolean strictHostKeyChecking = true;
@@ -214,6 +227,15 @@ public class ReportDeliveryConfig {
 
         public Builder startTls(boolean startTls) {
             this.startTls = startTls;
+            return this;
+        }
+
+        /**
+         * Force implicit SSL/TLS (SMTPS) on or off. Leave unset ({@code null}) to auto-detect
+         * from the port (465 ⇒ implicit SSL).
+         */
+        public Builder sslEnable(Boolean sslEnable) {
+            this.sslEnable = sslEnable;
             return this;
         }
 
