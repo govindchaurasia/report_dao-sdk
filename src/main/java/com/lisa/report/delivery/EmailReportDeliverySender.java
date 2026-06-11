@@ -1,7 +1,6 @@
 package com.lisa.report.delivery;
 
 import com.lisa.report.ReportDeliveryException;
-import jakarta.mail.NoSuchProviderException;
 import jakarta.mail.Provider;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
@@ -58,7 +57,7 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
         }
 
         try {
-            ensureSmtpProvider(mailSender.getSession());
+            ensureSmtpProvider(mailSender.getSession(), props);
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
@@ -99,51 +98,66 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
     };
 
     /**
-     * Ensure the {@code smtp}/{@code smtps} transport providers are registered on the session.
+     * Ensure the session can actually create an {@code smtp} transport, repairing the provider
+     * registration in-place when it cannot.
      * <p>
-     * JavaMail discovers transport providers from the {@code META-INF/javamail.providers}
-     * resource shipped inside the mail implementation jar (Eclipse Angus Mail). When the host
-     * application repackages itself into a shaded/uber jar, that resource is frequently dropped
-     * or overwritten, even though the implementation classes remain on the classpath. The result
-     * is {@code NoSuchProviderException: smtp} at send time. Registering the providers explicitly
-     * here makes delivery resilient to how the host packages itself.
+     * JavaMail resolves a transport in two steps: it looks up the provider <em>metadata</em>
+     * (from a {@code META-INF/javamail.providers} resource or an explicit registration), then it
+     * instantiates the provider's implementation class. When a host repackages into a shaded/uber
+     * jar, a surviving {@code javamail.providers} resource frequently points the {@code smtp}
+     * protocol at an implementation class that is not on the classpath (e.g. a legacy
+     * {@code com.sun.mail.*} class) while the Eclipse Angus classes that <em>are</em> present go
+     * unreferenced. The metadata lookup then succeeds but the class load fails, and JavaMail masks
+     * that as {@code NoSuchProviderException: smtp} at send time.
      * <p>
-     * If discovery already works (the provider is present), this is a no-op. If no mail
-     * implementation can be loaded at all, a clear {@link ReportDeliveryException} is thrown with
-     * remediation guidance instead of letting a cryptic {@code NoSuchProviderException} surface.
+     * So we health-check by actually instantiating the transport (not just checking that provider
+     * metadata exists). If that fails, we register a verified-loadable implementation and force the
+     * session to use it via the {@code mail.<proto>.class} property — which {@link Session#getProvider}
+     * consults <em>before</em> the protocol map, and which therefore overrides a broken mapping that
+     * {@link Session#addProvider} alone would not (addProvider does not replace an existing
+     * protocol→provider entry). If no implementation can be instantiated at all, a clear
+     * {@link ReportDeliveryException} with remediation guidance is thrown instead of the cryptic
+     * {@code NoSuchProviderException}.
      */
-    private static void ensureSmtpProvider(Session session) {
-        if (hasProvider(session, "smtp")) {
+    private static void ensureSmtpProvider(Session session, Properties props) {
+        if (canCreateTransport(session, "smtp")) {
             return;
         }
         for (String[] impl : SMTP_IMPL_CANDIDATES) {
             try {
-                // Confirm the implementation classes are actually present before registering.
+                // Confirm the implementation class is actually loadable before forcing it.
                 Class.forName(impl[0]);
                 session.addProvider(new Provider(Provider.Type.TRANSPORT, "smtp", impl[0], "Jakarta Mail", null));
                 session.addProvider(new Provider(Provider.Type.TRANSPORT, "smtps", impl[1], "Jakarta Mail", null));
-                return;
+                // Force getProvider() to resolve our (loadable) class, bypassing any broken mapping.
+                props.put("mail.smtp.class", impl[0]);
+                props.put("mail.smtps.class", impl[1]);
+                if (canCreateTransport(session, "smtp")) {
+                    return;
+                }
             } catch (Throwable ignored) {
-                // This implementation is not on the classpath; try the next candidate.
+                // This implementation is not usable; try the next candidate.
             }
         }
         throw new ReportDeliveryException(
-                "No Jakarta Mail SMTP implementation is available on the host classpath: the 'jakarta.mail' "
-                + "API is present, but neither Eclipse Angus Mail (org.eclipse.angus:jakarta.mail) nor the "
-                + "legacy com.sun.mail implementation could be loaded, so the 'smtp' transport cannot be "
-                + "created (NoSuchProviderException: smtp). Add 'org.eclipse.angus:jakarta.mail' to the host "
-                + "runtime classpath (report_dao-sdk already declares it transitively via "
-                + "spring-boot-starter-mail, so this usually means the host excludes it or the dependency was "
-                + "not refreshed). If the host builds a shaded/uber JAR, also merge META-INF service resources "
-                + "(e.g. the Maven Shade plugin's ServicesResourceTransformer) so the mail provider "
-                + "registration is preserved.");
+                "Unable to create a Jakarta Mail 'smtp' transport on the host classpath. The 'jakarta.mail' "
+                + "API is present, but no usable SMTP implementation could be instantiated: neither Eclipse "
+                + "Angus Mail (org.eclipse.angus.mail.smtp.SMTPTransport) nor the legacy com.sun.mail "
+                + "implementation is loadable, so the registered provider cannot be created "
+                + "(NoSuchProviderException: smtp). Ensure 'org.eclipse.angus:jakarta.mail' (and its runtime "
+                + "dependency 'org.eclipse.angus:angus-activation') are on the host runtime classpath; "
+                + "report_dao-sdk declares them transitively via spring-boot-starter-mail, so this usually "
+                + "means the host excludes them, ships only the API jar, or dropped them while building a "
+                + "shaded/uber JAR. If you build a shaded JAR, also merge META-INF resources (e.g. the Maven "
+                + "Shade plugin's ServicesResourceTransformer) so the mail provider registration survives.");
     }
 
-    private static boolean hasProvider(Session session, String protocol) {
+    /** Whether the session can instantiate a transport for the protocol (no network connection is made). */
+    private static boolean canCreateTransport(Session session, String protocol) {
         try {
-            session.getProvider(protocol);
+            session.getTransport(protocol);
             return true;
-        } catch (NoSuchProviderException ex) {
+        } catch (Exception ex) {
             return false;
         }
     }
