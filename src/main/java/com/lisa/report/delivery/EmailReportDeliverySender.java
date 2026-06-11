@@ -1,6 +1,9 @@
 package com.lisa.report.delivery;
 
 import com.lisa.report.ReportDeliveryException;
+import jakarta.activation.CommandMap;
+import jakarta.activation.DataContentHandler;
+import jakarta.activation.MailcapCommandMap;
 import jakarta.mail.Provider;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
@@ -73,6 +76,7 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
 
         try {
             ensureSmtpProvider(mailSender.getSession(), props);
+            ensureJakartaContentHandlers();
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
@@ -101,6 +105,68 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
             throw new ReportDeliveryException("Failed to set email sender name", ex);
         } catch (Exception ex) {
             throw new ReportDeliveryException("Failed to send report email to: " + config.getToAddresses(), ex);
+        }
+    }
+
+    /** Jakarta-compatible content handlers (MIME type → Eclipse Angus handler class) used to
+     *  override a stale legacy {@code com.sun.mail.handlers.*} mailcap registration. */
+    private static final String[][] CONTENT_HANDLERS = {
+            {"text/plain", "org.eclipse.angus.mail.handlers.text_plain"},
+            {"text/html", "org.eclipse.angus.mail.handlers.text_html"},
+            {"text/xml", "org.eclipse.angus.mail.handlers.text_xml"},
+            {"multipart/*", "org.eclipse.angus.mail.handlers.multipart_mixed"},
+            {"message/rfc822", "org.eclipse.angus.mail.handlers.message_rfc822"},
+    };
+
+    private static volatile boolean contentHandlersEnsured;
+
+    /**
+     * Ensure the JavaBeans Activation Framework (JAF) command map resolves the MIME content
+     * handlers to Jakarta-compatible implementations.
+     * <p>
+     * JAF picks a {@link DataContentHandler} for each MIME type from {@code META-INF/mailcap}
+     * resources on the classpath. When a host carries a stale legacy {@code com.sun.mail}
+     * (javax-era) jar, its mailcap maps {@code text/plain} (etc.) to
+     * {@code com.sun.mail.handlers.text_plain}, which implements the old
+     * {@code javax.activation.DataContentHandler}. Under Jakarta Mail the framework casts the
+     * handler to {@code jakarta.activation.DataContentHandler}, so writing the message body
+     * fails with a {@link ClassCastException} at send time.
+     * <p>
+     * We fix this by registering the Eclipse Angus handlers (which implement the Jakarta type)
+     * as <em>programmatic</em> mailcap entries; JAF searches those before the file-based entries,
+     * so they override the broken mapping while leaving the host's other handlers intact. This is
+     * a one-time, process-wide install (the JAF default command map is JVM-global), guarded so it
+     * only registers handler classes that are actually loadable and Jakarta-compatible.
+     */
+    private static void ensureJakartaContentHandlers() {
+        if (contentHandlersEnsured) {
+            return;
+        }
+        synchronized (EmailReportDeliverySender.class) {
+            if (contentHandlersEnsured) {
+                return;
+            }
+            CommandMap existing = CommandMap.getDefaultCommandMap();
+            MailcapCommandMap mailcap = (existing instanceof MailcapCommandMap)
+                    ? (MailcapCommandMap) existing
+                    : new MailcapCommandMap();
+            boolean registeredAny = false;
+            for (String[] entry : CONTENT_HANDLERS) {
+                try {
+                    Class<?> handler = Class.forName(entry[1]);
+                    // Only override with a handler that is actually a Jakarta DataContentHandler.
+                    if (DataContentHandler.class.isAssignableFrom(handler)) {
+                        mailcap.addMailcap(entry[0] + ";; x-java-content-handler=" + entry[1]);
+                        registeredAny = true;
+                    }
+                } catch (ReflectiveOperationException | LinkageError ignored) {
+                    // Angus handler not on the classpath; nothing to override with for this type.
+                }
+            }
+            if (registeredAny) {
+                CommandMap.setDefaultCommandMap(mailcap);
+            }
+            contentHandlersEnsured = true;
         }
     }
 
