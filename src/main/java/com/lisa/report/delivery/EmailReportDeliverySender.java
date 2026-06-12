@@ -242,7 +242,7 @@ public class EmailReportDeliverySender implements ReportDeliverySender {
                 + "implementation is loadable, so the registered provider cannot be created "
                 + "(NoSuchProviderException: smtp). Ensure 'org.eclipse.angus:jakarta.mail' (and its runtime "
                 + "dependency 'org.eclipse.angus:angus-activation') are on the host runtime classpath; "
-                + "report_dao-sdk declares them transitively via spring-boot-starter-mail, so this usually "
+                + "report-sdk declares them transitively via spring-boot-starter-mail, so this usually "
                 + "means the host excludes them, ships only the API jar, or dropped them while building a "
                 + "shaded/uber JAR. If you build a shaded JAR, also merge META-INF resources (e.g. the Maven "
                 + "Shade plugin's ServicesResourceTransformer) so the mail provider registration survives.");

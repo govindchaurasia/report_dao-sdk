@@ -1,4 +1,4 @@
-# Integrating `report_dao-sdk` into the host app
+# Integrating `report-sdk` into the host app
 
 This guide shows how to wire the reporting framework into your Spring Boot host
 application. All of the code below is **host-side glue** that lives in *your*
@@ -20,7 +20,7 @@ REST controller keeps the distinct `ReportSdkController` name.)
 <!-- pom.xml of the host app -->
 <dependency>
     <groupId>com.lisa</groupId>
-    <artifactId>report_dao-sdk</artifactId>
+    <artifactId>report-sdk</artifactId>
     <version>1.0.0</version>
 </dependency>
 ```

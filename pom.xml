@@ -12,11 +12,11 @@
     </parent>
 
     <groupId>com.lisa</groupId>
-    <artifactId>report_dao-sdk</artifactId>
+    <artifactId>report-sdk</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>report_dao-sdk</name>
+    <name>report-sdk</name>
     <description>Self-contained data-access + multi-format (JSON/Excel/CSV) reporting library, consumed as a dependency JAR</description>
 
     <properties>
